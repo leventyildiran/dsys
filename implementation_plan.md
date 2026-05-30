@@ -446,6 +446,16 @@ Birimlerin (UBATAM, DTS vb.) sunduğu hizmetlerin faturalandırılmasını, hibr
 - **PDF Önizleme ve Doğrudan Baskı (Milimetrik Hizalama):** Faturanın tam o andaki PDF önizlemesi (sadece matbu kağıttaki boşluklara denk gelecek metinler ve milimetrik offsetler ile) ekranda görüntülenir. Kullanıcı "Yazdır" dediğinde tarayıcı üzerinden doğrudan boş matbu faturaya baskı yapılır. Baskı işlemi tamamlanan fatura kuyruktan düşer ve kullanıcı bir sonraki faturaya geçer.
 - **Fatura Takip Detayları:** Fatura seri/sıra numarası, işlem tarihi ve ilgili hizmet birimi veritabanında saklanarak faturaların arşivi tutulur.
 
+### 6.8 MODÜL 9: Bütçe Takibi ve Ödenek Kontrol Modülü
+Üniversite bünyesindeki farklı birimlerin (Diş Hekimliği, Tarımsal Araştırmalar vb.) ödeneklerini, bütçe kalemlerini ve yasal harcama sınırlarını merkezi (konsolide) ve birim bazlı olarak izleyen modüldür.
+- **Birim Bazlı Limit Tanımlamaları:** Her birimin bütçe büyüklüğü ve kalem ödenekleri sisteme girilir. Örneğin, `03.02` (Tüketime Yönelik Mal ve Malzeme Alımları) bütçe kalemi Diş Hekimliği biriminde 10.000.000 TL iken, Tarımsal Araştırmalar biriminde 100.000 TL olarak bağımsız şekilde tanımlanabilir.
+- **Konsolide Bütçe İzleme Paneli:** Süper Admin ve YK Sekreteri, tüm birimlerin bütçelerini, toplam harcamalarını ve kalan ödeneklerini tek bir konsolide (toplu birleştirilmiş) ekranda grafiksel ve tablosal olarak izleyebilir.
+- **Yüzde 10 Yasal Harcama Sınırı Denetimi (Direct Procurement Guardrail):** 
+  - Belirli 5-6 kritik bütçe kaleminde (Örn: `03.02` - Tüketime Yönelik Malzemeler, `03.05` - Hizmet Alımları vb.) birimlerin kümülatif harcamalarının, o kaleme ait toplam yıllık ödeneğin **%10'unu** geçip geçmediği sistem tarafından otomatik hesaplanır:
+    `harcamaOrani = (kümülatifHarcama + yeniTalepTutar) / yillikToplamOdenek`
+  - Eğer bu oran %10'u aşarsa, sistem işlemi otomatik onaylamak yerine **"Yasal Tavan Aşımı - YK Kararı Gereklidir"** uyarısı verir, işlemi bloke eder ve onay zincirini doğrudan Yürütme Kurulu onayına yönlendirir.
+- **Bütçe Kalemi Raporlama:** Birimlerin kalan ödenek limitleri, dönemsel harcama eğilimleri ve limit aşımları raporlanabilir.
+
 ---
 
 ## 14. Karara Bağlanan Tasarım Seçimleri
