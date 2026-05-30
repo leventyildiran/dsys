@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../providers/user_provider.dart';
 import '../danismanlik/danismanlik_form_screen.dart';
 import '../danismanlik/danismanlik_liste_screen.dart';
@@ -241,31 +242,43 @@ class _OverviewPanel extends StatelessWidget {
   }
 
   Widget _buildQuickStats(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.5,
-          children: const [
-            _StatCard(
-              icon: Icons.handshake,
-              label: 'Aktif Danışmanlıklar',
-              value: '—',
-            ),
-            _StatCard(
-              icon: Icons.pending_actions,
-              label: 'Bekleyen Taksitler',
-              value: '—',
-            ),
-            _StatCard(
-              icon: Icons.check_circle,
-              label: 'Onaylanan Kararlar',
-              value: '—',
-            ),
-          ],
+    return Selector<DashboardProvider, (int, int, int, bool)>(
+      selector: (_, p) => (
+        p.aktifDanismanlikSayisi,
+        p.bekleyenTaksitSayisi,
+        p.onaylananKararSayisi,
+        p.isLoading,
+      ),
+      builder: (context, data, _) {
+        final (aktif, bekleyen, onaylanan, isLoading) = data;
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+            return GridView.count(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.5,
+              children: [
+                _StatCard(
+                  icon: Icons.handshake,
+                  label: 'Aktif Danışmanlıklar',
+                  value: isLoading ? '...' : aktif.toString(),
+                ),
+                _StatCard(
+                  icon: Icons.pending_actions,
+                  label: 'Bekleyen Taksitler',
+                  value: isLoading ? '...' : bekleyen.toString(),
+                ),
+                _StatCard(
+                  icon: Icons.check_circle,
+                  label: 'Onaylanan Kararlar',
+                  value: isLoading ? '...' : onaylanan.toString(),
+                ),
+              ],
+            );
+          },
         );
       },
     );

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../models/birim_model.dart';
 import '../models/personel_model.dart';
 import '../models/firma_model.dart';
@@ -26,6 +28,7 @@ class BirimService {
           .map((doc) => BirimModel.fromMap(doc.id, doc.data()))
           .toList();
     } catch (e) {
+      debugPrint('[DataService] Hata: $e');
       return [];
     }
   }
@@ -36,6 +39,7 @@ class BirimService {
       if (!doc.exists || doc.data() == null) return null;
       return BirimModel.fromMap(id, doc.data()!);
     } catch (e) {
+      debugPrint('[DataService] Hata: $e');
       return null;
     }
   }
@@ -88,6 +92,7 @@ class PersonelService {
           .map((doc) => PersonelModel.fromMap(doc.id, doc.data()))
           .toList();
     } catch (e) {
+      debugPrint('[DataService] Hata: $e');
       return [];
     }
   }
@@ -98,6 +103,7 @@ class PersonelService {
       if (!doc.exists || doc.data() == null) return null;
       return PersonelModel.fromMap(id, doc.data()!);
     } catch (e) {
+      debugPrint('[DataService] Hata: $e');
       return null;
     }
   }
@@ -148,6 +154,7 @@ class FirmaService {
           .map((doc) => FirmaModel.fromMap(doc.id, doc.data()))
           .toList();
     } catch (e) {
+      debugPrint('[DataService] Hata: $e');
       return [];
     }
   }
@@ -189,6 +196,7 @@ class DanismanlikService {
           .map((doc) => DanismanlikModel.fromMap(doc.id, doc.data()))
           .toList();
     } catch (e) {
+      debugPrint('[DataService] Hata: $e');
       return [];
     }
   }
@@ -199,6 +207,7 @@ class DanismanlikService {
       if (!doc.exists || doc.data() == null) return null;
       return DanismanlikModel.fromMap(id, doc.data()!);
     } catch (e) {
+      debugPrint('[DataService] Hata: $e');
       return null;
     }
   }
@@ -243,6 +252,7 @@ class FaaliyetTanimService {
           .map((doc) => FaaliyetTanimModel.fromMap(doc.id, doc.data()))
           .toList();
     } catch (e) {
+      debugPrint('[DataService] Hata: $e');
       return [];
     }
   }
@@ -271,6 +281,7 @@ class SistemAyarlariService {
       if (!doc.exists || doc.data() == null) return null;
       return SistemAyarlariModel.fromMap(doc.data()!);
     } catch (e) {
+      debugPrint('[DataService] Hata: $e');
       return null;
     }
   }
