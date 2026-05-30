@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
+import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
 
@@ -56,54 +56,9 @@ class AppRouter {
         ),
         GoRoute(
           path: '/dashboard',
-          builder: (context, state) => const _DashboardPlaceholder(),
+          builder: (context, state) => const DashboardScreen(),
         ),
       ],
-    );
-  }
-}
-
-/// Dashboard ekranı için geçici placeholder widget.
-/// Faz 2'de gerçek dashboard ile değiştirilecektir.
-class _DashboardPlaceholder extends StatelessWidget {
-  const _DashboardPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    final authProvider = context.read<AuthProvider>();
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('DSYS - Döner Sermaye Yönetim Sistemi'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Çıkış Yap',
-            onPressed: () => authProvider.signOut(),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.dashboard_rounded,
-              size: 64,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Hoş Geldiniz!',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              authProvider.user?.email ?? '',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

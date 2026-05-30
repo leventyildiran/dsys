@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
+import 'providers/user_provider.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -27,17 +28,20 @@ class DSYSApp extends StatefulWidget {
 
 class _DSYSAppState extends State<DSYSApp> {
   late final AuthProvider _authProvider;
+  late final UserProvider _userProvider;
   late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
     _authProvider = AuthProvider();
+    _userProvider = UserProvider(authProvider: _authProvider);
     _router = AppRouter.router(_authProvider);
   }
 
   @override
   void dispose() {
+    _userProvider.dispose();
     _authProvider.dispose();
     _router.dispose();
     super.dispose();
@@ -45,8 +49,11 @@ class _DSYSAppState extends State<DSYSApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _authProvider,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: _authProvider),
+        ChangeNotifierProvider.value(value: _userProvider),
+      ],
       child: MaterialApp.router(
         title: 'DSYS - Döner Sermaye Yönetim Sistemi',
         debugShowCheckedModeBanner: false,
