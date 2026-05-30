@@ -435,6 +435,13 @@ Tüm kararların yıl bazlı izole sorgulanması, gelir/dağıtım analizi, biri
 - **OCR + Gemini ile Akıllı Form Doldurucu:** EBYS'den yüklenen üst yazı PDF'lerini otomatik tarayarak hoca, tutar, tarih gibi bilgileri forma yansıtır.
 - **Dahili Güvenli Onay Zinciri & Doğrulama QR:** SMS OTP veya şifreli mühür ile onaylanan belgelere doğrulama barkodu ve QR kodu basılarak arşivlenir.
 
+### 6.7 MODÜL 8: Otomatik Fatura Basım ve Excel Şablon Modülü
+Birimlerin (UBATAM, DTS vb.) sunduğu hizmetlerin faturalandırılmasını ve matbu (kağıt) faturalara basılmasını yönetir.
+- **Birim Girişi:** Birim sekreteri veya ilgili personel, tahlil/hizmet kalemlerini girer (Örn: "X firmasına 3 adet su tahlili, birim fiyatı 100 TL, toplam 300 TL").
+- **Fatura Detayları:** Faturaya ait firma bilgileri, hizmet türü (kısa tahlil vb.), fatura seri/sıra numarası gibi veriler sistemde takip edilir.
+- **Excel Şablon Motoru:** Sistem, girilen verileri üniversitenin fiziki basılı faturasının ölçülerine ve hizalamasına birebir uygun olan bir Excel şablonuna enjekte eder.
+- **Fiziki Yazıcı Baskısı:** Kullanıcı, üretilen bu Excel dosyasını indirip yazıcıya matbu (kağıt) faturayı yerleştirerek doğrudan baskı alır.
+
 ---
 
 ## 14. Karara Bağlanan Tasarım Seçimleri
@@ -449,11 +456,16 @@ Yapay zeka ajanının Flutter, Firebase ve projeye özel hesaplama/şablon kural
 
 ---
 
-## 16. Faz 1: Firebase Altyapısı ve Kimlik Doğrulama Planı
+## 16. Faz 1: Firebase Altyapısı ve Kimlik Doğrulama Planı [TAMAMLANDI]
 
-Bu fazda, `E:\antivaty\dsys` dizinindeki yeni Flutter projesine Firebase bağlantısı eklenecek ve GoRouter ile güvenli giriş akışı (Auth Redirect) kurulacaktır.
+Bu fazda, `E:\antivaty\dsys` dizinindeki yeni Flutter projesine Firebase bağlantısı eklenmiş, GoRouter ile güvenli giriş akışı (Auth Redirect) kurulmuş ve uygulama canlıya alınmıştır.
 
-### Önerilen Dosya Değişiklikleri:
+### Yapılan İşlemler:
+- **Firebase Auth & Firestore:** Proje, yeni oluşturulan `dsys-44b8e` Firebase projesine bağlanmıştır. Auth üzerinde E-posta/Şifre yöntemi aktifleştirilmiş, Firestore veritabanı test modunda kurulmuştur.
+- **Süper Admin Kaydı:** Giriş yapabilmek için `levent2853@gmail.com` adresine `Ln4267331_` şifresiyle `super_admin` yetkisi tanımlanmıştır.
+- **Web Yayınlama:** Uygulama web için başarıyla derlenip **[https://dsys-44b8e.web.app](https://dsys-44b8e.web.app)** adresinde Firebase Hosting üzerinde canlıya alınmıştır.
+
+### Tamamlanan Dosya Değişiklikleri:
 
 #### [MODIFY] [pubspec.yaml](file:///e:/antivaty/dsys/pubspec.yaml)
 - Firebase bağımlılıkları (`firebase_core`, `firebase_auth`, `cloud_firestore`) eklenecek.
