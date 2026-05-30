@@ -436,10 +436,13 @@ Tüm kararların yıl bazlı izole sorgulanması, gelir/dağıtım analizi, biri
 - **Dahili Güvenli Onay Zinciri & Doğrulama QR:** SMS OTP veya şifreli mühür ile onaylanan belgelere doğrulama barkodu ve QR kodu basılarak arşivlenir.
 
 ### 6.7 MODÜL 8: Otomatik Fatura Basım ve Akıllı PDF Önizleme Modülü
-Birimlerin (UBATAM, DTS vb.) sunduğu hizmetlerin faturalandırılmasını, akıllı veri okuma ile doldurulmasını ve matbu (kağıt) faturalara PDF önizleme üzerinden basılmasını yönetir.
-- **Toplu PDF/Metin Yükleme ve Yapay Zeka Ayrıştırma (AI Batch Parser):** Karşı birimlerden gelen, içinde birden fazla fatura talebi barındıran PDF belgeleri (veya kopyalanan metin listeleri) sisteme yüklenir. Yapay zeka (Gemini), bu PDF içerisindeki tüm fatura taleplerini (örneğin 20 farklı fatura talebini) otomatik olarak okur, ayrıştırır ve her birini bağımsız bir fatura taslağı olarak böler.
+Birimlerin (UBATAM, DTS vb.) sunduğu hizmetlerin faturalandırılmasını, hibrit veri okuma ile doldurulmasını ve matbu (kağıt) faturalara PDF önizleme üzerinden basılmasını yönetir.
+- **Toplu PDF/Metin Yükleme ve Hibrit Ayrıştırma (Script-First & AI-Fallback):** Karşı birimlerden gelen, içinde birden fazla fatura talebi barındıran PDF belgeleri (veya kopyalanan metin listeleri) sisteme yüklenir.
+  - **Script (Birincil Regex / Kural Tabanlı Parser):** Sistem, gelen metni/listeyi Regex (düzenli ifadeler) veya satır bazlı kural tabanlı bir script (Dart/Javascript parser) ile okur. Yapısal şablonları (tablolar, iki nokta üst üste ile ayrılmış listeler vb.) anında çözümler. Bu sayede 0 maliyetle ve anında veri ayrıştırması yapılır.
+  - **AI (İkincil Fallback / Yapay Zeka):** Eğer gelen veri düzensiz bir e-posta veya karmaşık bir metin ise ve script ayrıştıramazsa, yapay zeka (Gemini API) devreye girerek metni anlamlandırır ve formu doldurur.
+  - Okunan veriler (örneğin 20 farklı fatura talebi) otomatik olarak bölünür ve her biri bağımsız bir fatura taslağı olarak kuyruğa aktarılır.
 - **Fatura İşlem Kuyruğu (Queue Pipeline):** Ayrıştırılan tüm fatura talepleri ekranda sırayla listelenir (Örn: "UBATAM Fatura Kuyruğu: 20 Bekleyen İşlem"). 
-- **Tek Tek Kontrol ve Önizleme (One-by-One Processing):** Kullanıcı listedeki bekleyen faturalara sırasıyla tıklar. Sistem, ilgili faturaya ait firma ismi, tahlil detayları ve tutar gibi yapay zeka tarafından doldurulmuş alanları gösterir. Kullanıcı son kontrollerini ve düzenlemelerini yapar.
+- **Tek Tek Kontrol ve Önizleme (One-by-One Processing):** Kullanıcı listedeki bekleyen faturalara sırasıyla tıklar. Sistem, ilgili faturaya ait firma ismi, tahlil detayları ve tutar gibi doldurulmuş alanları gösterir. Kullanıcı son kontrollerini ve düzenlemelerini yapar.
 - **PDF Önizleme ve Doğrudan Baskı (Milimetrik Hizalama):** Faturanın tam o andaki PDF önizlemesi (sadece matbu kağıttaki boşluklara denk gelecek metinler ve milimetrik offsetler ile) ekranda görüntülenir. Kullanıcı "Yazdır" dediğinde tarayıcı üzerinden doğrudan boş matbu faturaya baskı yapılır. Baskı işlemi tamamlanan fatura kuyruktan düşer ve kullanıcı bir sonraki faturaya geçer.
 - **Fatura Takip Detayları:** Fatura seri/sıra numarası, işlem tarihi ve ilgili hizmet birimi veritabanında saklanarak faturaların arşivi tutulur.
 
