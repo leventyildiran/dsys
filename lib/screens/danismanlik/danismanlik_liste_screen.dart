@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/danismanlik_model.dart';
 import '../../theme.dart';
+import 'danismanlik_form_screen.dart';
 
 /// Danışmanlık listesi ekranı.
 ///
@@ -71,12 +72,11 @@ class _DanismanlikListeScreenState extends State<DanismanlikListeScreen> {
               ),
               FilledButton.icon(
                 onPressed: () {
-                  // Navigasyon: yeni danışmanlık formu
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => Scaffold(
                         appBar: AppBar(title: const Text('Yeni Taksit')),
-                        body: const _FormPlaceholder(),
+                        body: const DanismanlikFormScreen(),
                       ),
                     ),
                   );
@@ -279,17 +279,6 @@ class _InfoChip extends StatelessWidget {
               ),
         ),
       ],
-    );
-  }
-}
-
-class _FormPlaceholder extends StatelessWidget {
-  const _FormPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Danışmanlık Formu (DanismanlikFormScreen) buraya bağlanacak'),
     );
   }
 }
