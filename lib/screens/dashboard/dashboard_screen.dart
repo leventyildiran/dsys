@@ -5,8 +5,13 @@ import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/user_provider.dart';
+import '../ayarlar/sistem_ayarlari_screen.dart';
+import '../birim/birim_yonetim_screen.dart';
 import '../danismanlik/danismanlik_form_screen.dart';
 import '../danismanlik/danismanlik_liste_screen.dart';
+import '../firma/firma_yonetim_screen.dart';
+import '../kullanici/kullanici_yonetim_screen.dart';
+import '../personel/personel_yonetim_screen.dart';
 
 /// Ana dashboard ekranı.
 ///
@@ -93,6 +98,14 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       const _NavItem(
         icon: Icons.receipt_long_rounded,
         label: 'Taksit Formu',
+      ),
+      const _NavItem(
+        icon: Icons.school_rounded,
+        label: 'Personel',
+      ),
+      const _NavItem(
+        icon: Icons.store_rounded,
+        label: 'Firmalar',
       ),
     ];
 
@@ -190,13 +203,17 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 2:
         return const DanismanlikFormScreen();
       case 3:
-        return const _PlaceholderPanel(title: 'Kullanıcı Yönetimi');
+        return const PersonelYonetimScreen();
       case 4:
-        return const _PlaceholderPanel(title: 'Birim Yönetimi');
+        return const FirmaYonetimScreen();
       case 5:
-        return const _PlaceholderPanel(title: 'Sistem Ayarları');
+        return const KullaniciYonetimScreen();
+      case 6:
+        return const BirimYonetimScreen();
+      case 7:
+        return const SistemAyarlariScreen();
       default:
-        return const _PlaceholderPanel(title: '');
+        return const SizedBox.shrink();
     }
   }
 }
@@ -324,41 +341,6 @@ class _StatCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Placeholder panel (henüz geliştirilmemiş modüller için).
-class _PlaceholderPanel extends StatelessWidget {
-  const _PlaceholderPanel({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.construction_rounded,
-            size: 48,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Bu modül yakında aktif olacak.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ],
       ),
     );
   }

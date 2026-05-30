@@ -86,6 +86,9 @@ class DanismanlikModel {
   final int dagitilabilirOran;
   final DateTime? createdAt;
 
+  /// Convenience getter for danismanlikTuru.
+  DanismanlikTuru get tur => danismanlikTuru;
+
   factory DanismanlikModel.fromMap(String id, Map<String, dynamic> map) {
     return DanismanlikModel(
       id: id,
