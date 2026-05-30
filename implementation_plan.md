@@ -437,9 +437,10 @@ Tüm kararların yıl bazlı izole sorgulanması, gelir/dağıtım analizi, biri
 
 ### 6.7 MODÜL 8: Otomatik Fatura Basım ve Akıllı PDF Önizleme Modülü
 Birimlerin (UBATAM, DTS vb.) sunduğu hizmetlerin faturalandırılmasını, akıllı veri okuma ile doldurulmasını ve matbu (kağıt) faturalara PDF önizleme üzerinden basılmasını yönetir.
-- **Akıllı Evrak/Metin Okuyucu (AI Parser):** Birimlerden gelen liste formatındaki üst yazı metinleri veya tahlil listeleri kopyalanıp yapıştırıldığında (veya PDF olarak yüklendiğinde) sistemdeki yapay zeka okuyucusu (Gemini) firma adını, tahlil kalemlerini, birim fiyatları ve toplamları otomatik olarak ayrıştırarak formu doldurur.
-- **PDF Önizleme Motoru (Visual PDF Preview):** Girilen bilgilere göre faturanın tarayıcı ekranında anlık bir PDF önizlemesi oluşturulur. Bu PDF, üniversitenin fiziki matbu fatura kağıdının kenar boşlukları ve hizalamasına (milimetrik offset) tam uyumlu şekilde sadece metin alanlarını çizer.
-- **Son Kontrol ve Doğrudan Baskı:** Kullanıcı ekran üzerindeki PDF önizlemesinden son kontrolleri gerçekleştirir. Her şey doğruysa "Yazdır" butonuna basarak tarayıcının yazdırma penceresi aracılığıyla boş matbu fatura kağıdına doğrudan baskı alır (Excel dosyası indirmeye gerek kalmaz).
+- **Toplu PDF/Metin Yükleme ve Yapay Zeka Ayrıştırma (AI Batch Parser):** Karşı birimlerden gelen, içinde birden fazla fatura talebi barındıran PDF belgeleri (veya kopyalanan metin listeleri) sisteme yüklenir. Yapay zeka (Gemini), bu PDF içerisindeki tüm fatura taleplerini (örneğin 20 farklı fatura talebini) otomatik olarak okur, ayrıştırır ve her birini bağımsız bir fatura taslağı olarak böler.
+- **Fatura İşlem Kuyruğu (Queue Pipeline):** Ayrıştırılan tüm fatura talepleri ekranda sırayla listelenir (Örn: "UBATAM Fatura Kuyruğu: 20 Bekleyen İşlem"). 
+- **Tek Tek Kontrol ve Önizleme (One-by-One Processing):** Kullanıcı listedeki bekleyen faturalara sırasıyla tıklar. Sistem, ilgili faturaya ait firma ismi, tahlil detayları ve tutar gibi yapay zeka tarafından doldurulmuş alanları gösterir. Kullanıcı son kontrollerini ve düzenlemelerini yapar.
+- **PDF Önizleme ve Doğrudan Baskı (Milimetrik Hizalama):** Faturanın tam o andaki PDF önizlemesi (sadece matbu kağıttaki boşluklara denk gelecek metinler ve milimetrik offsetler ile) ekranda görüntülenir. Kullanıcı "Yazdır" dediğinde tarayıcı üzerinden doğrudan boş matbu faturaya baskı yapılır. Baskı işlemi tamamlanan fatura kuyruktan düşer ve kullanıcı bir sonraki faturaya geçer.
 - **Fatura Takip Detayları:** Fatura seri/sıra numarası, işlem tarihi ve ilgili hizmet birimi veritabanında saklanarak faturaların arşivi tutulur.
 
 ---
