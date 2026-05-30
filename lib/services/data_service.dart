@@ -75,10 +75,9 @@ class PersonelService {
       final snapshot = await _service.getAll(
         _path,
         queryBuilder: (ref) {
-          var query = ref.where('aktif', isEqualTo: onlyActive ? true : null);
-          if (onlyActive) {
-            query = ref.where('aktif', isEqualTo: true);
-          }
+          var query = onlyActive
+              ? ref.where('aktif', isEqualTo: true)
+              : ref;
           if (birimId != null) {
             query = query.where('birimId', isEqualTo: birimId);
           }

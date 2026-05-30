@@ -50,7 +50,7 @@ class DanismanlikModel {
     this.durum = DanismanlikDurum.bekliyor,
     this.ykKararTarihi,
     this.ykKararNo,
-    this.ykToplantıSayisi,
+    this.ykToplantiSayisi,
     this.hazinePayiOrani = 1,
     this.bapPayiOrani = 5,
     this.aracGerecPayiOrani = 45,
@@ -72,7 +72,7 @@ class DanismanlikModel {
   // Çatı karar bilgileri
   final String? ykKararTarihi;
   final String? ykKararNo;
-  final String? ykToplantıSayisi;
+  final String? ykToplantiSayisi;
 
   // Kesinti oranları (standart tür için)
   final int hazinePayiOrani;
@@ -100,7 +100,7 @@ class DanismanlikModel {
       durum: DanismanlikDurum.fromString(map['durum'] as String? ?? ''),
       ykKararTarihi: map['ykKararTarihi'] as String?,
       ykKararNo: map['ykKararNo'] as String?,
-      ykToplantıSayisi: map['ykToplantıSayisi'] as String?,
+      ykToplantiSayisi: map['ykToplantiSayisi'] as String?,
       hazinePayiOrani: (map['hazinePayiOrani'] as num?)?.toInt() ?? 1,
       bapPayiOrani: (map['bapPayiOrani'] as num?)?.toInt() ?? 5,
       aracGerecPayiOrani: (map['aracGerecPayiOrani'] as num?)?.toInt() ?? 45,
@@ -122,7 +122,7 @@ class DanismanlikModel {
       'durum': durum.value,
       'ykKararTarihi': ykKararTarihi,
       'ykKararNo': ykKararNo,
-      'ykToplantıSayisi': ykToplantıSayisi,
+      'ykToplantiSayisi': ykToplantiSayisi,
       'hazinePayiOrani': hazinePayiOrani,
       'bapPayiOrani': bapPayiOrani,
       'aracGerecPayiOrani': aracGerecPayiOrani,
@@ -143,7 +143,7 @@ class DanismanlikModel {
     DanismanlikDurum? durum,
     String? ykKararTarihi,
     String? ykKararNo,
-    String? ykToplantıSayisi,
+    String? ykToplantiSayisi,
     int? hazinePayiOrani,
     int? bapPayiOrani,
     int? aracGerecPayiOrani,
@@ -163,7 +163,7 @@ class DanismanlikModel {
       durum: durum ?? this.durum,
       ykKararTarihi: ykKararTarihi ?? this.ykKararTarihi,
       ykKararNo: ykKararNo ?? this.ykKararNo,
-      ykToplantıSayisi: ykToplantıSayisi ?? this.ykToplantıSayisi,
+      ykToplantiSayisi: ykToplantiSayisi ?? this.ykToplantiSayisi,
       hazinePayiOrani: hazinePayiOrani ?? this.hazinePayiOrani,
       bapPayiOrani: bapPayiOrani ?? this.bapPayiOrani,
       aracGerecPayiOrani: aracGerecPayiOrani ?? this.aracGerecPayiOrani,
