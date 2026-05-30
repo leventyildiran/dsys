@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/user_provider.dart';
+import '../danismanlik/danismanlik_form_screen.dart';
+import '../danismanlik/danismanlik_liste_screen.dart';
 
 /// Ana dashboard ekranı.
 ///
@@ -86,6 +88,10 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       const _NavItem(
         icon: Icons.handshake_rounded,
         label: 'Danışmanlıklar',
+      ),
+      const _NavItem(
+        icon: Icons.receipt_long_rounded,
+        label: 'Taksit Formu',
       ),
     ];
 
@@ -179,12 +185,14 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 0:
         return _OverviewPanel(user: widget.user);
       case 1:
-        return const _PlaceholderPanel(title: 'Danışmanlıklar');
+        return const DanismanlikListeScreen();
       case 2:
-        return const _PlaceholderPanel(title: 'Kullanıcı Yönetimi');
+        return const DanismanlikFormScreen();
       case 3:
-        return const _PlaceholderPanel(title: 'Birim Yönetimi');
+        return const _PlaceholderPanel(title: 'Kullanıcı Yönetimi');
       case 4:
+        return const _PlaceholderPanel(title: 'Birim Yönetimi');
+      case 5:
         return const _PlaceholderPanel(title: 'Sistem Ayarları');
       default:
         return const _PlaceholderPanel(title: '');
