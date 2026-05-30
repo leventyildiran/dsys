@@ -435,12 +435,12 @@ Tüm kararların yıl bazlı izole sorgulanması, gelir/dağıtım analizi, biri
 - **OCR + Gemini ile Akıllı Form Doldurucu:** EBYS'den yüklenen üst yazı PDF'lerini otomatik tarayarak hoca, tutar, tarih gibi bilgileri forma yansıtır.
 - **Dahili Güvenli Onay Zinciri & Doğrulama QR:** SMS OTP veya şifreli mühür ile onaylanan belgelere doğrulama barkodu ve QR kodu basılarak arşivlenir.
 
-### 6.7 MODÜL 8: Otomatik Fatura Basım ve Excel Şablon Modülü
-Birimlerin (UBATAM, DTS vb.) sunduğu hizmetlerin faturalandırılmasını ve matbu (kağıt) faturalara basılmasını yönetir.
-- **Birim Girişi:** Birim sekreteri veya ilgili personel, tahlil/hizmet kalemlerini girer (Örn: "X firmasına 3 adet su tahlili, birim fiyatı 100 TL, toplam 300 TL").
-- **Fatura Detayları:** Faturaya ait firma bilgileri, hizmet türü (kısa tahlil vb.), fatura seri/sıra numarası gibi veriler sistemde takip edilir.
-- **Excel Şablon Motoru:** Sistem, girilen verileri üniversitenin fiziki basılı faturasının ölçülerine ve hizalamasına birebir uygun olan bir Excel şablonuna enjekte eder.
-- **Fiziki Yazıcı Baskısı:** Kullanıcı, üretilen bu Excel dosyasını indirip yazıcıya matbu (kağıt) faturayı yerleştirerek doğrudan baskı alır.
+### 6.7 MODÜL 8: Otomatik Fatura Basım ve Akıllı PDF Önizleme Modülü
+Birimlerin (UBATAM, DTS vb.) sunduğu hizmetlerin faturalandırılmasını, akıllı veri okuma ile doldurulmasını ve matbu (kağıt) faturalara PDF önizleme üzerinden basılmasını yönetir.
+- **Akıllı Evrak/Metin Okuyucu (AI Parser):** Birimlerden gelen liste formatındaki üst yazı metinleri veya tahlil listeleri kopyalanıp yapıştırıldığında (veya PDF olarak yüklendiğinde) sistemdeki yapay zeka okuyucusu (Gemini) firma adını, tahlil kalemlerini, birim fiyatları ve toplamları otomatik olarak ayrıştırarak formu doldurur.
+- **PDF Önizleme Motoru (Visual PDF Preview):** Girilen bilgilere göre faturanın tarayıcı ekranında anlık bir PDF önizlemesi oluşturulur. Bu PDF, üniversitenin fiziki matbu fatura kağıdının kenar boşlukları ve hizalamasına (milimetrik offset) tam uyumlu şekilde sadece metin alanlarını çizer.
+- **Son Kontrol ve Doğrudan Baskı:** Kullanıcı ekran üzerindeki PDF önizlemesinden son kontrolleri gerçekleştirir. Her şey doğruysa "Yazdır" butonuna basarak tarayıcının yazdırma penceresi aracılığıyla boş matbu fatura kağıdına doğrudan baskı alır (Excel dosyası indirmeye gerek kalmaz).
+- **Fatura Takip Detayları:** Fatura seri/sıra numarası, işlem tarihi ve ilgili hizmet birimi veritabanında saklanarak faturaların arşivi tutulur.
 
 ---
 
