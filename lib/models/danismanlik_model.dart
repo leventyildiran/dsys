@@ -40,6 +40,8 @@ class DanismanlikModel {
     required this.id,
     required this.birimId,
     required this.firmaId,
+    this.firmaUnvan,
+    this.birimKisaAd,
     required this.danismanlikTuru,
     required this.konusu,
     required this.toplamTutar,
@@ -55,11 +57,14 @@ class DanismanlikModel {
     this.bapPayiOrani = 5,
     this.aracGerecPayiOrani = 45,
     this.dagitilabilirOran = 49,
+    this.createdAt,
   });
 
   final String id;
   final String birimId;
   final String firmaId;
+  final String? firmaUnvan;
+  final String? birimKisaAd;
   final DanismanlikTuru danismanlikTuru;
   final String konusu;
   final double toplamTutar;
@@ -79,12 +84,15 @@ class DanismanlikModel {
   final int bapPayiOrani;
   final int aracGerecPayiOrani;
   final int dagitilabilirOran;
+  final DateTime? createdAt;
 
   factory DanismanlikModel.fromMap(String id, Map<String, dynamic> map) {
     return DanismanlikModel(
       id: id,
       birimId: map['birimId'] as String? ?? '',
       firmaId: map['firmaId'] as String? ?? '',
+      firmaUnvan: map['firmaUnvan'] as String?,
+      birimKisaAd: map['birimKisaAd'] as String?,
       danismanlikTuru:
           DanismanlikTuru.fromString(map['danismanlikTuru'] as String? ?? ''),
       konusu: map['konusu'] as String? ?? '',
@@ -105,6 +113,9 @@ class DanismanlikModel {
       bapPayiOrani: (map['bapPayiOrani'] as num?)?.toInt() ?? 5,
       aracGerecPayiOrani: (map['aracGerecPayiOrani'] as num?)?.toInt() ?? 45,
       dagitilabilirOran: (map['dagitilabilirOran'] as num?)?.toInt() ?? 49,
+      createdAt: map['createdAt'] != null
+          ? DateTime.tryParse(map['createdAt'] as String)
+          : null,
     );
   }
 
@@ -112,6 +123,8 @@ class DanismanlikModel {
     return {
       'birimId': birimId,
       'firmaId': firmaId,
+      'firmaUnvan': firmaUnvan,
+      'birimKisaAd': birimKisaAd,
       'danismanlikTuru': danismanlikTuru.value,
       'konusu': konusu,
       'toplamTutar': toplamTutar,
@@ -127,12 +140,15 @@ class DanismanlikModel {
       'bapPayiOrani': bapPayiOrani,
       'aracGerecPayiOrani': aracGerecPayiOrani,
       'dagitilabilirOran': dagitilabilirOran,
+      'createdAt': createdAt?.toIso8601String(),
     };
   }
 
   DanismanlikModel copyWith({
     String? birimId,
     String? firmaId,
+    String? firmaUnvan,
+    String? birimKisaAd,
     DanismanlikTuru? danismanlikTuru,
     String? konusu,
     double? toplamTutar,
@@ -148,11 +164,14 @@ class DanismanlikModel {
     int? bapPayiOrani,
     int? aracGerecPayiOrani,
     int? dagitilabilirOran,
+    DateTime? createdAt,
   }) {
     return DanismanlikModel(
       id: id,
       birimId: birimId ?? this.birimId,
       firmaId: firmaId ?? this.firmaId,
+      firmaUnvan: firmaUnvan ?? this.firmaUnvan,
+      birimKisaAd: birimKisaAd ?? this.birimKisaAd,
       danismanlikTuru: danismanlikTuru ?? this.danismanlikTuru,
       konusu: konusu ?? this.konusu,
       toplamTutar: toplamTutar ?? this.toplamTutar,
@@ -168,6 +187,7 @@ class DanismanlikModel {
       bapPayiOrani: bapPayiOrani ?? this.bapPayiOrani,
       aracGerecPayiOrani: aracGerecPayiOrani ?? this.aracGerecPayiOrani,
       dagitilabilirOran: dagitilabilirOran ?? this.dagitilabilirOran,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/turkce_format.dart';
 import '../../models/danismanlik_model.dart';
+import '../../providers/user_provider.dart';
+import '../../services/data_service.dart';
 import '../../theme.dart';
 import 'danismanlik_form_screen.dart';
 
@@ -17,45 +21,26 @@ class DanismanlikListeScreen extends StatefulWidget {
 
 class _DanismanlikListeScreenState extends State<DanismanlikListeScreen> {
   DanismanlikDurum? _seciliDurum;
+  final DanismanlikService _danismanlikService = DanismanlikService();
 
-  // Demo veri (Firebase bağlantısında gerçek veriye dönüşecek)
-  final List<_DemoDanismanlik> _demolar = [
-    _DemoDanismanlik(
-      firmaUnvan: 'Orhan Şaşmaz Tekstil Ltd. Şti.',
-      konusu: 'Tasarım, tasarım danışmanlığı, ürün geliştirme',
-      birimKisaAd: 'DTS',
-      toplamTutar: 48000,
-      suresi: 6,
-      durum: DanismanlikDurum.aktif,
-      tur: DanismanlikTuru.standart,
-    ),
-    _DemoDanismanlik(
-      firmaUnvan: 'ABC Mühendislik A.Ş.',
-      konusu: 'Teknik danışmanlık ve eğitim hizmetleri',
-      birimKisaAd: 'UBATAM',
-      toplamTutar: 120000,
-      suresi: 12,
-      durum: DanismanlikDurum.bekliyor,
-      tur: DanismanlikTuru.sanayiIsbirligi58k,
-    ),
-    _DemoDanismanlik(
-      firmaUnvan: 'Kıvılcım Seramik San.',
-      konusu: 'Seramik tasarım ve kalite kontrol danışmanlığı',
-      birimKisaAd: 'DTS',
-      toplamTutar: 36000,
-      suresi: 4,
-      durum: DanismanlikDurum.tamamlandi,
-      tur: DanismanlikTuru.standart,
-    ),
-  ];
-
-  List<_DemoDanismanlik> get _filtrelenmis {
-    if (_seciliDurum == null) return _demolar;
-    return _demolar.where((d) => d.durum == _seciliDurum).toList();
+  List<DanismanlikModel> _filtrelenmis(List<DanismanlikModel> liste) {
+    final filtreli = _seciliDurum == null
+        ? liste
+        : liste.where((d) => d.durum == _seciliDurum).toList();
+    filtreli.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bDate.compareTo(aDate);
+    });
+    return filtreli;
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<UserProvider>().currentUser;
+    final birimId =
+        (user == null || user.role.isGlobal) ? null : user.birimId;
+
     return Padding(
       padding: const EdgeInsets.all(DSYSTheme.paddingSayfa),
       child: Column(
@@ -112,8 +97,28 @@ class _DanismanlikListeScreenState extends State<DanismanlikListeScreen> {
 
           // Liste
           Expanded(
-            child: _filtrelenmis.isEmpty
-                ? Center(
+            child: StreamBuilder<List<DanismanlikModel>>(
+              stream: _danismanlikService.stream(birimId: birimId),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Danışmanlık verileri alınamadı.',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  );
+                }
+
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final filtrelenmis = _filtrelenmis(snapshot.data!);
+                if (filtrelenmis.isEmpty) {
+                  return Center(
                     child: Text(
                       'Bu filtreye uygun danışmanlık bulunamadı.',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -121,16 +126,19 @@ class _DanismanlikListeScreenState extends State<DanismanlikListeScreen> {
                                 Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
-                  )
-                : ListView.separated(
-                    itemCount: _filtrelenmis.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: DSYSTheme.spacingS),
-                    itemBuilder: (context, index) {
-                      return _DanismanlikKarti(
-                          danismanlik: _filtrelenmis[index]);
-                    },
-                  ),
+                  );
+                }
+
+                return ListView.separated(
+                  itemCount: filtrelenmis.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: DSYSTheme.spacingS),
+                  itemBuilder: (context, index) {
+                    return _DanismanlikKarti(danismanlik: filtrelenmis[index]);
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -140,7 +148,7 @@ class _DanismanlikListeScreenState extends State<DanismanlikListeScreen> {
 
 class _DanismanlikKarti extends StatelessWidget {
   const _DanismanlikKarti({required this.danismanlik});
-  final _DemoDanismanlik danismanlik;
+  final DanismanlikModel danismanlik;
 
   @override
   Widget build(BuildContext context) {
@@ -176,7 +184,9 @@ class _DanismanlikKarti extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      danismanlik.firmaUnvan,
+                      danismanlik.firmaUnvan?.trim().isNotEmpty == true
+                          ? danismanlik.firmaUnvan!
+                          : 'Firma bilgisi girilmemiş',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -193,7 +203,10 @@ class _DanismanlikKarti extends StatelessWidget {
                       children: [
                         _InfoChip(
                           icon: Icons.business,
-                          text: danismanlik.birimKisaAd,
+                          text: danismanlik.birimKisaAd?.trim().isNotEmpty ==
+                                  true
+                              ? danismanlik.birimKisaAd!
+                              : '-',
                         ),
                         const SizedBox(width: 8),
                         _InfoChip(
@@ -215,7 +228,7 @@ class _DanismanlikKarti extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    _formatTutar(danismanlik.toplamTutar),
+                    TurkceFormat.para(danismanlik.toplamTutar),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: DSYSTheme.paraRengi,
@@ -247,17 +260,6 @@ class _DanismanlikKarti extends StatelessWidget {
       ),
     );
   }
-
-  String _formatTutar(double tutar) {
-    final fixed = tutar.toStringAsFixed(0);
-    final buffer = StringBuffer();
-    final length = fixed.length;
-    for (int i = 0; i < length; i++) {
-      if (i > 0 && (length - i) % 3 == 0) buffer.write('.');
-      buffer.write(fixed[i]);
-    }
-    return '${buffer.toString()} ₺';
-  }
 }
 
 class _InfoChip extends StatelessWidget {
@@ -281,25 +283,4 @@ class _InfoChip extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Demo veri modeli (Firebase öncesi).
-class _DemoDanismanlik {
-  const _DemoDanismanlik({
-    required this.firmaUnvan,
-    required this.konusu,
-    required this.birimKisaAd,
-    required this.toplamTutar,
-    required this.suresi,
-    required this.durum,
-    required this.tur,
-  });
-
-  final String firmaUnvan;
-  final String konusu;
-  final String birimKisaAd;
-  final double toplamTutar;
-  final int suresi;
-  final DanismanlikDurum durum;
-  final DanismanlikTuru tur;
 }

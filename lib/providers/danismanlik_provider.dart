@@ -5,6 +5,7 @@ import '../core/karar_metni_servisi.dart';
 import '../core/turkce_format.dart';
 import '../models/danismanlik_model.dart';
 import '../models/personel_model.dart';
+import '../services/data_service.dart';
 
 /// Personel görev atama modeli (form state için).
 class PersonelGorevAtama {
@@ -65,6 +66,11 @@ class PersonelDagitimSonucu {
 ///
 /// Canlı önizleme hesaplamalarını tetikler ve karar metni üretir.
 class DanismanlikProvider extends ChangeNotifier {
+  DanismanlikProvider({DanismanlikService? danismanlikService})
+      : _danismanlikService = danismanlikService ?? DanismanlikService();
+
+  final DanismanlikService _danismanlikService;
+
   // ─────────────────────────────────────────────────────────────
   // FORM STATE
   // ─────────────────────────────────────────────────────────────
@@ -123,6 +129,12 @@ class DanismanlikProvider extends ChangeNotifier {
   // Önizleme sonucu
   OnizlemeSonucu? _onizleme;
   OnizlemeSonucu? get onizleme => _onizleme;
+
+  bool _isSaving = false;
+  bool get isSaving => _isSaving;
+
+  String? _saveError;
+  String? get saveError => _saveError;
 
   // ─────────────────────────────────────────────────────────────
   // SETTER'LAR (her biri hesaplamayı tetikler)
@@ -254,7 +266,64 @@ class DanismanlikProvider extends ChangeNotifier {
     _ykKararNo = '';
     _personeller = [];
     _onizleme = null;
+    _saveError = null;
     notifyListeners();
+  }
+
+  Future<bool> kaydet({
+    required String birimId,
+    String? birimKisaAd,
+  }) async {
+    if (_isSaving) return false;
+
+    final firma = _firmaUnvan.trim();
+    final konu = _isinKonusu.trim();
+    if (_brutTaksitTutari <= 0 || firma.isEmpty || konu.isEmpty) {
+      _saveError =
+          'Firma ünvanı, iş konusu ve brüt tutar alanlarını doldurmalısınız.';
+      notifyListeners();
+      return false;
+    }
+
+    _isSaving = true;
+    _saveError = null;
+    notifyListeners();
+
+    try {
+      final model = DanismanlikModel(
+        id: '',
+        birimId: birimId,
+        firmaId: '',
+        firmaUnvan: firma,
+        birimKisaAd: birimKisaAd?.trim().isNotEmpty == true
+            ? birimKisaAd!.trim()
+            : _birimAd.trim(),
+        danismanlikTuru: _tur,
+        konusu: konu,
+        toplamTutar: _brutTaksitTutari,
+        kdvOrani: _kdvOrani,
+        suresi: _suresi,
+        durum: DanismanlikDurum.bekliyor,
+        ykKararTarihi: _ykKararTarihi.trim().isEmpty ? null : _ykKararTarihi,
+        ykKararNo: _ykKararNo.trim().isEmpty ? null : _ykKararNo,
+        ykToplantiSayisi:
+            _birimToplantiSayisi.trim().isEmpty ? null : _birimToplantiSayisi,
+        hazinePayiOrani: _hazinePayiOrani,
+        bapPayiOrani: _bapPayiOrani,
+        aracGerecPayiOrani: _aracGerecPayiOrani,
+        dagitilabilirOran: _tur == DanismanlikTuru.standart ? 49 : 85,
+        createdAt: DateTime.now(),
+      );
+
+      await _danismanlikService.create(model);
+      return true;
+    } catch (_) {
+      _saveError = 'Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.';
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
   }
 
   // ─────────────────────────────────────────────────────────────

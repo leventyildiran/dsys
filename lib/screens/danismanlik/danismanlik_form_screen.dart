@@ -8,6 +8,7 @@ import '../../core/turkce_format.dart';
 import '../../models/danismanlik_model.dart';
 import '../../models/personel_model.dart';
 import '../../providers/danismanlik_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../theme.dart';
 
 /// Danışmanlık taksit formu + canlı önizleme ekranı.
@@ -359,9 +360,68 @@ class _FormPanel extends StatelessWidget {
               icon: const Icon(Icons.person_add_outlined),
               label: const Text('Personel Ekle'),
             ),
+            const SizedBox(height: DSYSTheme.spacingL),
+            Selector<DanismanlikProvider, bool>(
+              selector: (_, p) => p.isSaving,
+              builder: (context, isSaving, _) {
+                return Row(
+                  children: [
+                    FilledButton.icon(
+                      onPressed: isSaving ? null : () => _kaydet(context),
+                      icon: isSaving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label:
+                          Text(isSaving ? 'Kaydediliyor...' : 'Firebase\'e Kaydet'),
+                    ),
+                    const SizedBox(width: DSYSTheme.spacingM),
+                    TextButton(
+                      onPressed: isSaving ? null : provider.temizle,
+                      child: const Text('Formu Temizle'),
+                    ),
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: DSYSTheme.spacingXL),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _kaydet(BuildContext context) async {
+    final provider = context.read<DanismanlikProvider>();
+    final user = context.read<UserProvider>().currentUser;
+    final birimId = user?.birimId ?? provider.birimAd.trim();
+    if (birimId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Birim bilgisi bulunamadı.')),
+      );
+      return;
+    }
+
+    final sonuc = await provider.kaydet(
+      birimId: birimId,
+      birimKisaAd: provider.birimAd.trim(),
+    );
+    if (!context.mounted) return;
+
+    if (sonuc) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Danışmanlık kaydı Firebase\'e eklendi.')),
+      );
+      provider.temizle();
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(provider.saveError ?? 'Kayıt tamamlanamadı.'),
       ),
     );
   }
@@ -927,4 +987,3 @@ class _KararMetniOnizleme extends StatelessWidget {
     );
   }
 }
-
