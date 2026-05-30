@@ -76,15 +76,20 @@ class GorevliPersonelService {
             .toList());
   }
 
-  /// Toplu atama — birden fazla personeli aynı anda ekler.
+  /// Toplu atama — birden fazla personeli atomik olarak ekler.
   Future<void> topluEkle(
     String danismanlikId,
     List<GorevliPersonelModel> atamalar,
   ) async {
     try {
+      final batch = _service.batch();
+      final collRef = _service.collection(_path(danismanlikId));
+
       for (final atama in atamalar) {
-        await _service.create(_path(danismanlikId), atama.toMap());
+        batch.set(collRef.doc(), atama.toMap());
       }
+
+      await batch.commit();
     } catch (e) {
       debugPrint('[GorevliPersonelService.topluEkle] Hata: $e');
       rethrow;

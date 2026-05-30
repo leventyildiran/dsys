@@ -86,6 +86,9 @@ class FirestoreService {
     await collection(collectionPath).doc(docId).delete();
   }
 
+  /// Yeni bir WriteBatch oluşturur (toplu yazma işlemleri için).
+  WriteBatch batch() => _firestore.batch();
+
   /// Global users koleksiyonu (üniversite altında değil, kök seviyede).
   CollectionReference<Map<String, dynamic>> get usersCollection =>
       _firestore.collection('users');

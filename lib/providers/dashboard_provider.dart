@@ -23,11 +23,11 @@ class DashboardProvider extends ChangeNotifier {
   int _aktifDanismanlikSayisi = 0;
   int get aktifDanismanlikSayisi => _aktifDanismanlikSayisi;
 
-  int _bekleyenTaksitSayisi = 0;
-  int get bekleyenTaksitSayisi => _bekleyenTaksitSayisi;
+  int _bekleyenDanismanlikSayisi = 0;
+  int get bekleyenDanismanlikSayisi => _bekleyenDanismanlikSayisi;
 
-  int _onaylananKararSayisi = 0;
-  int get onaylananKararSayisi => _onaylananKararSayisi;
+  int _tamamlananKararSayisi = 0;
+  int get tamamlananKararSayisi => _tamamlananKararSayisi;
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -39,11 +39,11 @@ class DashboardProvider extends ChangeNotifier {
             .where((d) => d.durum == DanismanlikDurum.aktif)
             .length;
 
-        _bekleyenTaksitSayisi = danismanliklar
+        _bekleyenDanismanlikSayisi = danismanliklar
             .where((d) => d.durum == DanismanlikDurum.bekliyor)
             .length;
 
-        _onaylananKararSayisi = danismanliklar
+        _tamamlananKararSayisi = danismanliklar
             .where((d) => d.durum == DanismanlikDurum.tamamlandi)
             .length;
 

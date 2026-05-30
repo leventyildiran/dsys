@@ -245,8 +245,8 @@ class _OverviewPanel extends StatelessWidget {
     return Selector<DashboardProvider, (int, int, int, bool)>(
       selector: (_, p) => (
         p.aktifDanismanlikSayisi,
-        p.bekleyenTaksitSayisi,
-        p.onaylananKararSayisi,
+        p.bekleyenDanismanlikSayisi,
+        p.tamamlananKararSayisi,
         p.isLoading,
       ),
       builder: (context, data, _) {
@@ -268,12 +268,12 @@ class _OverviewPanel extends StatelessWidget {
                 ),
                 _StatCard(
                   icon: Icons.pending_actions,
-                  label: 'Bekleyen Taksitler',
+                  label: 'Bekleyen Danışmanlıklar',
                   value: isLoading ? '...' : bekleyen.toString(),
                 ),
                 _StatCard(
                   icon: Icons.check_circle,
-                  label: 'Onaylanan Kararlar',
+                  label: 'Tamamlanan Kararlar',
                   value: isLoading ? '...' : onaylanan.toString(),
                 ),
               ],

@@ -73,21 +73,21 @@ class DagitimService {
     }
   }
 
-  /// Toplu dağıtım kaydı — tüm personel listesini tek seferde yazar.
+  /// Toplu dağıtım kaydı — tüm personel listesini atomik olarak yazar.
   Future<void> topluKaydet(
     String danismanlikId,
     String taksitId,
     List<DagitimModel> dagitimlar,
   ) async {
     try {
+      final batch = _service.batch();
+      final collRef = _service.collection(_path(danismanlikId, taksitId));
+
       for (final dagitim in dagitimlar) {
-        await _service.set(
-          _path(danismanlikId, taksitId),
-          dagitim.personelId,
-          dagitim.toMap(),
-          merge: false,
-        );
+        batch.set(collRef.doc(dagitim.personelId), dagitim.toMap());
       }
+
+      await batch.commit();
     } catch (e) {
       debugPrint('[DagitimService.topluKaydet] Hata: $e');
       rethrow;
