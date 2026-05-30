@@ -32,31 +32,32 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // TODO: flutterfire configure çalıştırıldıktan sonra gerçek değerlerle güncellenecek.
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR-API-KEY',
-    appId: '1:000000000000:web:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'dsys-usak',
-    authDomain: 'dsys-usak.firebaseapp.com',
-    storageBucket: 'dsys-usak.appspot.com',
+    apiKey: 'AIzaSyBvW5QXKJVSbcyW3ELIuBpd3k5R6GsGaV8',
+    appId: '1:752318324432:web:b452cf72fade563b7bc8d5',
+    messagingSenderId: '752318324432',
+    projectId: 'dsys-44b8e',
+    authDomain: 'dsys-44b8e.firebaseapp.com',
+    storageBucket: 'dsys-44b8e.firebasestorage.app',
   );
 
+  // TODO: flutterfire configure çalıştırıldıktan sonra gerçek değerlerle güncellenecek.
+
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR-API-KEY',
-    appId: '1:000000000000:android:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'dsys-usak',
-    storageBucket: 'dsys-usak.appspot.com',
+    apiKey: 'AIzaSyDW_rTwCsZrIaLj4y4jwy-AjVZNSj9RS2o',
+    appId: '1:752318324432:android:090bb7f4ca18a62c7bc8d5',
+    messagingSenderId: '752318324432',
+    projectId: 'dsys-44b8e',
+    storageBucket: 'dsys-44b8e.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR-API-KEY',
-    appId: '1:000000000000:ios:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'dsys-usak',
-    storageBucket: 'dsys-usak.appspot.com',
-    iosBundleId: 'com.usak.dsys',
+    apiKey: 'AIzaSyC_1ii-bymR8isIz4Vlt_hWSq82dOI0DqA',
+    appId: '1:752318324432:ios:d82fb87c4cf3a1927bc8d5',
+    messagingSenderId: '752318324432',
+    projectId: 'dsys-44b8e',
+    storageBucket: 'dsys-44b8e.firebasestorage.app',
+    iosBundleId: 'tr.edu.usak.dsys',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(

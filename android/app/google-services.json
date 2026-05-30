@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "752318324432",
+    "project_id": "dsys-44b8e",
+    "storage_bucket": "dsys-44b8e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:752318324432:android:090bb7f4ca18a62c7bc8d5",
+        "android_client_info": {
+          "package_name": "tr.edu.usak.dsys"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDW_rTwCsZrIaLj4y4jwy-AjVZNSj9RS2o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
