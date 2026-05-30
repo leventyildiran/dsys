@@ -208,8 +208,11 @@ class _KullaniciYonetimScreenState extends State<KullaniciYonetimScreen> {
                 if (formKey.currentState!.validate()) {
                   formKey.currentState!.save();
                   try {
+                    // NOT: Gerçek uygulamada UID, Firebase Auth Admin SDK ile
+                    // kullanıcı oluşturulduktan sonra alınır. Burada geçici
+                    // olarak email kullanılır; Cloud Function ile entegre edilecek.
                     final user = UserModel(
-                      uid: email, // Placeholder - gerçek UID Firebase Auth'tan gelecek
+                      uid: email,
                       displayName: displayName,
                       email: email,
                       role: role,

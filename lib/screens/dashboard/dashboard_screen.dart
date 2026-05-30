@@ -213,6 +213,7 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 7:
         return const SistemAyarlariScreen();
       default:
+        assert(false, 'Geçersiz navigasyon index: $_selectedIndex');
         return const SizedBox.shrink();
     }
   }
