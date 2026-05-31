@@ -41,7 +41,9 @@ class DefaultFirebaseOptions {
     storageBucket: 'dsys-44b8e.firebasestorage.app',
   );
 
-  // TODO: flutterfire configure çalıştırıldıktan sonra gerçek değerlerle güncellenecek.
+  // Not: macOS ve Windows platformları henüz Firebase Console'da yapılandırılmamıştır.
+  // Aktif platformlar: Web, Android, iOS.
+  // Bu platformlar gerektiğinde `flutterfire configure` ile güncellenecektir.
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDW_rTwCsZrIaLj4y4jwy-AjVZNSj9RS2o',
