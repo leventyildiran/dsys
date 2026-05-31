@@ -6,7 +6,10 @@ import '../../providers/evrak_arsiv_provider.dart';
 
 /// Dahili Evrak Arşivi ekranı.
 class EvrakArsivScreen extends StatefulWidget {
-  const EvrakArsivScreen({super.key});
+  const EvrakArsivScreen({super.key, this.embedded = false});
+
+  /// Dashboard içine embed edildiğinde AppBar gösterilmez.
+  final bool embedded;
 
   @override
   State<EvrakArsivScreen> createState() => _EvrakArsivScreenState();
@@ -35,18 +38,36 @@ class _EvrakArsivScreenState extends State<EvrakArsivScreen> {
     final provider = context.watch<EvrakArsivProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Evrak Arşivi'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _yeniEvrakDialog(context),
-            tooltip: 'Yeni Evrak',
-          ),
-        ],
-      ),
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: const Text('Evrak Arşivi'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () => _yeniEvrakDialog(context),
+                  tooltip: 'Yeni Evrak',
+                ),
+              ],
+            ),
       body: Column(
         children: [
+          if (widget.embedded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                children: [
+                  Text('Evrak Arşivi',
+                      style: Theme.of(context).textTheme.headlineSmall),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => _yeniEvrakDialog(context),
+                    tooltip: 'Yeni Evrak',
+                  ),
+                ],
+              ),
+            ),
           // Arama çubuğu
           Padding(
             padding: const EdgeInsets.all(16),

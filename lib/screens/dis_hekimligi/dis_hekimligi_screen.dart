@@ -7,7 +7,10 @@ import '../../providers/dis_hekimligi_provider.dart';
 
 /// Diş Hekimliği Katkı Payı Dağıtım ekranı.
 class DisHekimligiScreen extends StatefulWidget {
-  const DisHekimligiScreen({super.key});
+  const DisHekimligiScreen({super.key, this.embedded = false});
+
+  /// Dashboard içine embed edildiğinde AppBar gösterilmez.
+  final bool embedded;
 
   @override
   State<DisHekimligiScreen> createState() => _DisHekimligiScreenState();
@@ -28,21 +31,45 @@ class _DisHekimligiScreenState extends State<DisHekimligiScreen> {
     final provider = context.watch<DisHekimligiProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Diş Hekimliği Katkı Payı'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _yeniDagitimDialog(context),
-            tooltip: 'Yeni Dağıtım',
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: const Text('Diş Hekimliği Katkı Payı'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () => _yeniDagitimDialog(context),
+                  tooltip: 'Yeni Dağıtım',
+                ),
+              ],
+            ),
+      body: Column(
+        children: [
+          if (widget.embedded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                children: [
+                  Text('Diş Hekimliği Katkı Payı',
+                      style: Theme.of(context).textTheme.headlineSmall),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => _yeniDagitimDialog(context),
+                    tooltip: 'Yeni Dağıtım',
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : provider.dagitimlar.isEmpty
+                    ? _buildBosEkran(theme)
+                    : _buildListe(provider, theme),
           ),
         ],
       ),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : provider.dagitimlar.isEmpty
-              ? _buildBosEkran(theme)
-              : _buildListe(provider, theme),
     );
   }
 

@@ -7,7 +7,10 @@ import '../../providers/butce_aktarim_provider.dart';
 
 /// Bütçe Aktarımları Modülü ana ekranı.
 class ButceAktarimScreen extends StatefulWidget {
-  const ButceAktarimScreen({super.key});
+  const ButceAktarimScreen({super.key, this.embedded = false});
+
+  /// Dashboard içine embed edildiğinde AppBar gösterilmez.
+  final bool embedded;
 
   @override
   State<ButceAktarimScreen> createState() => _ButceAktarimScreenState();
@@ -28,21 +31,45 @@ class _ButceAktarimScreenState extends State<ButceAktarimScreen> {
     final provider = context.watch<ButceAktarimProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bütçe Aktarımları'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _yeniAktarimDialog(context),
-            tooltip: 'Yeni Aktarım',
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: const Text('Bütçe Aktarımları'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () => _yeniAktarimDialog(context),
+                  tooltip: 'Yeni Aktarım',
+                ),
+              ],
+            ),
+      body: Column(
+        children: [
+          if (widget.embedded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                children: [
+                  Text('Bütçe Aktarımları',
+                      style: Theme.of(context).textTheme.headlineSmall),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => _yeniAktarimDialog(context),
+                    tooltip: 'Yeni Aktarım',
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : provider.aktarimlar.isEmpty
+                    ? _buildBosEkran(theme)
+                    : _buildListe(provider, theme),
           ),
         ],
       ),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : provider.aktarimlar.isEmpty
-              ? _buildBosEkran(theme)
-              : _buildListe(provider, theme),
     );
   }
 

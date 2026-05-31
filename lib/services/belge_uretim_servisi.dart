@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
+
 import '../core/hesaplama_motoru.dart';
 import '../core/karar_metni_servisi.dart';
 import '../core/turkce_format.dart';
@@ -83,7 +85,7 @@ class BelgeUretimServisi {
 
   /// DOCX formatında belge üretir (Office Open XML).
   ///
-  /// Minimal .docx yapısı: ZIP arşivi içinde XML dokümanları.
+  /// Gerçek .docx ZIP arşivi üretir — Word ile açılabilir.
   static Uint8List docxOlustur(KararBelgesi belge) {
     final content = belge.tamMetin;
     final docXml = _buildDocumentXml(content, belge);
@@ -289,7 +291,7 @@ class BelgeUretimServisi {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // 6. DOCX (Office Open XML) ÜRETİMİ
+  // 6. DOCX (Office Open XML) ÜRETİMİ — Gerçek ZIP Arşivi
   // ─────────────────────────────────────────────────────────────
 
   /// Basit bir document.xml üretir (Word paragrafları).
@@ -321,16 +323,50 @@ $paragraphs
 </w:document>''';
   }
 
-  /// Minimal .docx arşivini oluşturur.
+  /// Gerçek .docx ZIP arşivini oluşturur.
   ///
-  /// **NOT:** Şu an document.xml içeriğini UTF-8 olarak döner.
-  /// Tam .docx ZIP arşivi üretimi için `archive` paketi gereklidir.
-  /// Bu paket entegre edilene kadar çıktı, doğrudan Word'de açılmaz;
-  /// ancak belge içeriği programatik olarak kullanılabilir.
+  /// DOCX dosyası aslında bir ZIP arşividir ve en az şu dosyaları içerir:
+  /// - [Content_Types].xml
+  /// - _rels/.rels
+  /// - word/document.xml
+  /// - word/_rels/document.xml.rels
   static Uint8List _buildDocxArchive(String documentXml) {
-    // Minimal DOCX yapısı - [Content_Types].xml, _rels/.rels, word/document.xml
-    // Gerçek ZIP arşivi için `archive` paketi gerekir.
-    return Uint8List.fromList(utf8.encode(documentXml));
+    final archive = Archive();
+
+    // [Content_Types].xml
+    const contentTypes = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>''';
+
+    // _rels/.rels
+    const rels = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>''';
+
+    // word/_rels/document.xml.rels
+    const docRels = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+</Relationships>''';
+
+    // Dosyaları arşive ekle
+    _addFileToArchive(archive, '[Content_Types].xml', contentTypes);
+    _addFileToArchive(archive, '_rels/.rels', rels);
+    _addFileToArchive(archive, 'word/document.xml', documentXml);
+    _addFileToArchive(archive, 'word/_rels/document.xml.rels', docRels);
+
+    // ZIP olarak encode et
+    final zipData = ZipEncoder().encode(archive);
+    return Uint8List.fromList(zipData!);
+  }
+
+  /// Arşive bir dosya ekler.
+  static void _addFileToArchive(Archive archive, String name, String content) {
+    final data = utf8.encode(content);
+    archive.addFile(ArchiveFile(name, data.length, data));
   }
 
   static String _xmlEscape(String text) {

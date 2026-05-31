@@ -7,7 +7,10 @@ import '../../providers/fatura_provider.dart';
 
 /// Otomatik Fatura Basım / PDF Önizleme ekranı.
 class FaturaScreen extends StatefulWidget {
-  const FaturaScreen({super.key});
+  const FaturaScreen({super.key, this.embedded = false});
+
+  /// Dashboard içine embed edildiğinde AppBar gösterilmez.
+  final bool embedded;
 
   @override
   State<FaturaScreen> createState() => _FaturaScreenState();
@@ -40,26 +43,52 @@ class _FaturaScreenState extends State<FaturaScreen>
     final provider = context.watch<FaturaProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Fatura Basım'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(
-              text: 'Kuyruk (${provider.kuyrukSayisi})',
-              icon: const Icon(Icons.queue),
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: const Text('Fatura Basım'),
+              bottom: TabBar(
+                controller: _tabController,
+                tabs: [
+                  Tab(
+                    text: 'Kuyruk (${provider.kuyrukSayisi})',
+                    icon: const Icon(Icons.queue),
+                  ),
+                  const Tab(text: 'Tümü', icon: Icon(Icons.list)),
+                  const Tab(text: 'Toplu Yükle', icon: Icon(Icons.upload_file)),
+                ],
+              ),
             ),
-            const Tab(text: 'Tümü', icon: Icon(Icons.list)),
-            const Tab(text: 'Toplu Yükle', icon: Icon(Icons.upload_file)),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildKuyrukTab(provider, theme),
-          _buildTumFaturalarTab(provider, theme),
-          _buildTopluYukleTab(provider, theme),
+          if (widget.embedded) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Text('Fatura Basım',
+                  style: Theme.of(context).textTheme.headlineSmall),
+            ),
+            TabBar(
+              controller: _tabController,
+              tabs: [
+                Tab(
+                  text: 'Kuyruk (${provider.kuyrukSayisi})',
+                  icon: const Icon(Icons.queue),
+                ),
+                const Tab(text: 'Tümü', icon: Icon(Icons.list)),
+                const Tab(text: 'Toplu Yükle', icon: Icon(Icons.upload_file)),
+              ],
+            ),
+          ],
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildKuyrukTab(provider, theme),
+                _buildTumFaturalarTab(provider, theme),
+                _buildTopluYukleTab(provider, theme),
+              ],
+            ),
+          ),
         ],
       ),
     );

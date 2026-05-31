@@ -5,13 +5,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Generic CRUD işlemlerini sağlar. Multi-tenant yapıyı destekler.
 /// `universiteler/{universiteId}` kök yolu altında çalışır.
 class FirestoreService {
-  FirestoreService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreService({FirebaseFirestore? firestore, String? universiteId})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _universiteId = universiteId ?? _defaultUniversiteId;
 
   final FirebaseFirestore _firestore;
+  final String _universiteId;
 
-  /// Şu an için tek üniversite. İleride dinamik yapılabilir.
-  static const String _universiteId = 'usak';
+  /// Varsayılan üniversite ID'si.
+  static const String _defaultUniversiteId = 'usak';
+
+  /// Aktif üniversite ID'sini global olarak ayarlar.
+  /// Uygulama başlangıcında kullanıcı profili yüklendiğinde çağrılır.
+  static String _activeUniversiteId = _defaultUniversiteId;
+  static String get activeUniversiteId => _activeUniversiteId;
+  static set activeUniversiteId(String value) {
+    _activeUniversiteId = value;
+  }
 
   /// Üniversite kök koleksiyon referansı.
   DocumentReference get universiteRef =>

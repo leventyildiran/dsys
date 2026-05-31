@@ -6,7 +6,10 @@ import '../../providers/gundem_provider.dart';
 
 /// Toplantı Gündem Derleyici ekranı.
 class GundemScreen extends StatefulWidget {
-  const GundemScreen({super.key});
+  const GundemScreen({super.key, this.embedded = false});
+
+  /// Dashboard içine embed edildiğinde AppBar gösterilmez.
+  final bool embedded;
 
   @override
   State<GundemScreen> createState() => _GundemScreenState();
@@ -27,21 +30,45 @@ class _GundemScreenState extends State<GundemScreen> {
     final provider = context.watch<GundemProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Toplantı Gündem Derleyici'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _yeniToplantiDialog(context),
-            tooltip: 'Yeni Toplantı',
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: const Text('Toplantı Gündem Derleyici'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () => _yeniToplantiDialog(context),
+                  tooltip: 'Yeni Toplantı',
+                ),
+              ],
+            ),
+      body: Column(
+        children: [
+          if (widget.embedded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                children: [
+                  Text('Toplantı Gündem Derleyici',
+                      style: Theme.of(context).textTheme.headlineSmall),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => _yeniToplantiDialog(context),
+                    tooltip: 'Yeni Toplantı',
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : provider.toplantilar.isEmpty
+                    ? _buildBosEkran(theme)
+                    : _buildListe(provider, theme),
           ),
         ],
       ),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : provider.toplantilar.isEmpty
-              ? _buildBosEkran(theme)
-              : _buildListe(provider, theme),
     );
   }
 

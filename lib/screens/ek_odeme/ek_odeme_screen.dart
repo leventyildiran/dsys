@@ -7,7 +7,10 @@ import '../../providers/ek_odeme_provider.dart';
 
 /// Dönemsel Ek Ödeme Dağıtımı ana ekranı.
 class EkOdemeScreen extends StatefulWidget {
-  const EkOdemeScreen({super.key});
+  const EkOdemeScreen({super.key, this.embedded = false});
+
+  /// Dashboard içine embed edildiğinde AppBar gösterilmez.
+  final bool embedded;
 
   @override
   State<EkOdemeScreen> createState() => _EkOdemeScreenState();
@@ -28,21 +31,45 @@ class _EkOdemeScreenState extends State<EkOdemeScreen> {
     final provider = context.watch<EkOdemeProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dönemsel Ek Ödeme Dağıtımı'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _yeniEkOdemeDialog(context),
-            tooltip: 'Yeni Ek Ödeme',
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: const Text('Dönemsel Ek Ödeme Dağıtımı'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () => _yeniEkOdemeDialog(context),
+                  tooltip: 'Yeni Ek Ödeme',
+                ),
+              ],
+            ),
+      body: Column(
+        children: [
+          if (widget.embedded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                children: [
+                  Text('Dönemsel Ek Ödeme Dağıtımı',
+                      style: Theme.of(context).textTheme.headlineSmall),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => _yeniEkOdemeDialog(context),
+                    tooltip: 'Yeni Ek Ödeme',
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : provider.ekOdemeler.isEmpty
+                    ? _buildBosEkran(theme)
+                    : _buildListe(provider, theme),
           ),
         ],
       ),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : provider.ekOdemeler.isEmpty
-              ? _buildBosEkran(theme)
-              : _buildListe(provider, theme),
     );
   }
 

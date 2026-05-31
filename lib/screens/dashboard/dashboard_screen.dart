@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/user_model.dart';
@@ -8,11 +7,18 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/user_provider.dart';
 import '../ayarlar/sistem_ayarlari_screen.dart';
 import '../birim/birim_yonetim_screen.dart';
+import '../butce_aktarim/butce_aktarim_screen.dart';
 import '../danismanlik/danismanlik_form_screen.dart';
 import '../danismanlik/danismanlik_liste_screen.dart';
+import '../dis_hekimligi/dis_hekimligi_screen.dart';
+import '../ek_odeme/ek_odeme_screen.dart';
+import '../evrak_arsiv/evrak_arsiv_screen.dart';
+import '../fatura/fatura_screen.dart';
 import '../firma/firma_yonetim_screen.dart';
+import '../gundem/gundem_screen.dart';
 import '../kullanici/kullanici_yonetim_screen.dart';
 import '../personel/personel_yonetim_screen.dart';
+import '../raporlama/raporlama_screen.dart';
 
 /// Ana dashboard ekranı.
 ///
@@ -98,7 +104,7 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       ),
       const _NavItem(
         icon: Icons.receipt_long_rounded,
-        label: 'Taksit Formu',
+        label: 'Yeni Danışmanlık',
       ),
       const _NavItem(
         icon: Icons.swap_horiz_rounded,
@@ -232,47 +238,19 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 2:
         return const DanismanlikFormScreen();
       case 3:
-        // Bütçe Aktarım — ayrı rota kullanır
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) context.go('/butce-aktarim');
-        });
-        return const Center(child: CircularProgressIndicator());
+        return const ButceAktarimScreen(embedded: true);
       case 4:
-        // Ek Ödeme — ayrı rota kullanır
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) context.go('/ek-odeme');
-        });
-        return const Center(child: CircularProgressIndicator());
+        return const EkOdemeScreen(embedded: true);
       case 5:
-        // Diş Hekimliği — ayrı rota kullanır
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) context.go('/dis-hekimligi');
-        });
-        return const Center(child: CircularProgressIndicator());
+        return const DisHekimligiScreen(embedded: true);
       case 6:
-        // Gündem — ayrı rota kullanır
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) context.go('/gundem');
-        });
-        return const Center(child: CircularProgressIndicator());
+        return const GundemScreen(embedded: true);
       case 7:
-        // Raporlama — ayrı rota kullanır
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) context.go('/raporlama');
-        });
-        return const Center(child: CircularProgressIndicator());
+        return const RaporlamaScreen(embedded: true);
       case 8:
-        // Evrak Arşiv — ayrı rota kullanır
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) context.go('/evrak-arsiv');
-        });
-        return const Center(child: CircularProgressIndicator());
+        return const EvrakArsivScreen(embedded: true);
       case 9:
-        // Fatura — ayrı rota kullanır
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) context.go('/fatura');
-        });
-        return const Center(child: CircularProgressIndicator());
+        return const FaturaScreen(embedded: true);
       case 10:
         return const PersonelYonetimScreen();
       case 11:

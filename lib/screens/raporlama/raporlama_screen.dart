@@ -7,7 +7,10 @@ import '../../services/raporlama_service.dart';
 
 /// Detaylı Arama, Raporlama ve Arşivleme ekranı.
 class RaporlamaScreen extends StatefulWidget {
-  const RaporlamaScreen({super.key});
+  const RaporlamaScreen({super.key, this.embedded = false});
+
+  /// Dashboard içine embed edildiğinde AppBar gösterilmez.
+  final bool embedded;
 
   @override
   State<RaporlamaScreen> createState() => _RaporlamaScreenState();
@@ -40,27 +43,50 @@ class _RaporlamaScreenState extends State<RaporlamaScreen>
     final provider = context.watch<RaporlamaProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Raporlama ve Analiz'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Genel', icon: Icon(Icons.dashboard)),
-            Tab(text: 'Birim', icon: Icon(Icons.business)),
-            Tab(text: 'Personel', icon: Icon(Icons.people)),
-          ],
-        ),
-      ),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: const Text('Raporlama ve Analiz'),
+              bottom: TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'Genel', icon: Icon(Icons.dashboard)),
+                  Tab(text: 'Birim', icon: Icon(Icons.business)),
+                  Tab(text: 'Personel', icon: Icon(Icons.people)),
+                ],
+              ),
+            ),
+      body: Column(
+        children: [
+          if (widget.embedded) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Text('Raporlama ve Analiz',
+                  style: Theme.of(context).textTheme.headlineSmall),
+            ),
+            TabBar(
               controller: _tabController,
-              children: [
-                _buildGenelTab(provider, theme),
-                _buildBirimTab(provider, theme),
-                _buildPersonelTab(provider, theme),
+              tabs: const [
+                Tab(text: 'Genel', icon: Icon(Icons.dashboard)),
+                Tab(text: 'Birim', icon: Icon(Icons.business)),
+                Tab(text: 'Personel', icon: Icon(Icons.people)),
               ],
             ),
+          ],
+          Expanded(
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildGenelTab(provider, theme),
+                      _buildBirimTab(provider, theme),
+                      _buildPersonelTab(provider, theme),
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
