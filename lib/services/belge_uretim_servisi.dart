@@ -323,14 +323,13 @@ $paragraphs
 
   /// Minimal .docx arşivini oluşturur.
   ///
-  /// Not: Bu, ZIP formatında geçerli bir .docx dosyasıdır.
-  /// Gerçek uygulamada `archive` paketi ile ZIP oluşturulur.
-  /// Şimdilik basit bir XML çıktısı döner (belge içeriği).
+  /// **NOT:** Şu an document.xml içeriğini UTF-8 olarak döner.
+  /// Tam .docx ZIP arşivi üretimi için `archive` paketi gereklidir.
+  /// Bu paket entegre edilene kadar çıktı, doğrudan Word'de açılmaz;
+  /// ancak belge içeriği programatik olarak kullanılabilir.
   static Uint8List _buildDocxArchive(String documentXml) {
     // Minimal DOCX yapısı - [Content_Types].xml, _rels/.rels, word/document.xml
     // Gerçek ZIP arşivi için `archive` paketi gerekir.
-    // Şimdilik document.xml içeriğini UTF-8 olarak döner.
-    // TODO: `archive` paketi eklendikten sonra tam .docx ZIP üretimi yapılacak.
     return Uint8List.fromList(utf8.encode(documentXml));
   }
 
