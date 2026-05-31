@@ -47,7 +47,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # Document Generation
-  archive: ^4.0.4
+  archive: ^3.6.1
   pdf: ^3.11.2
   printing: ^5.13.4
 

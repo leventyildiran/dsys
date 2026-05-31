@@ -171,7 +171,7 @@ class _DanismanlikKarti extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  danismanlik.tur == DanismanlikTuru.standart
+                  danismanlik.danismanlikTuru == DanismanlikTuru.standart
                       ? Icons.description_outlined
                       : Icons.factory_outlined,
                   color: Theme.of(context).colorScheme.onPrimaryContainer,
@@ -216,7 +216,7 @@ class _DanismanlikKarti extends StatelessWidget {
                         const SizedBox(width: 8),
                         _InfoChip(
                           icon: Icons.category,
-                          text: danismanlik.tur.displayName,
+                          text: danismanlik.danismanlikTuru.displayName,
                         ),
                       ],
                     ),
