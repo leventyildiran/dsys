@@ -39,6 +39,14 @@
 | 28 | Router güncellemesi — tüm modül rotaları eklendi | Faz 2 |
 | 29 | main.dart — tüm modül provider'ları entegre edildi | Faz 2 |
 | 30 | Dashboard navigasyon — tüm modüller menüye eklendi | Faz 2 |
+| 31 | Dashboard navigasyon tutarsızlığı giderildi — tüm modüller embed | Faz 3 |
+| 32 | Gerçek .docx ZIP arşivi üretimi (archive paketi) | Faz 3 |
+| 33 | Dinamik multi-tenant (universiteId kullanıcı profilinden) | Faz 3 |
+| 34 | Gerçek PDF fatura üretimi (pdf + printing paketi) | Faz 3 |
+| 35 | Firebase Security Rules — production-grade kurallar | Faz 3 |
+| 36 | Unit testleri (HesaplamaMotoru, TurkceFormat, KararMetni, UserModel) | Faz 3 |
+| 37 | CI/CD pipeline (GitHub Actions → analyze, test, build, deploy) | Faz 3 |
+| 38 | Excel import/export servisi (personel listesi yükleme/indirme) | Faz 3 |
 
 ---
 
@@ -62,15 +70,15 @@
 
 | # | Öğe | Not |
 |---|-----|-----|
-| 1 | Firebase Security Rules — production-grade kurallar | Deploy öncesi |
-| 2 | Birim testleri (unit + widget) | Çekirdek mantık stabilize olunca |
-| 3 | CI/CD pipeline (GitHub Actions → Firebase deploy) | Takım büyüyünce |
-| 4 | Çoklu üniversite desteği (multi-tenant dinamik) | İlk canlıdan sonra değerlendirilecek |
+| 1 | ~~Firebase Security Rules — production-grade kurallar~~ | ✅ Tamamlandı (firestore.rules) |
+| 2 | ~~Birim testleri (unit + widget)~~ | ✅ Tamamlandı (test/ dizini) |
+| 3 | ~~CI/CD pipeline (GitHub Actions → Firebase deploy)~~ | ✅ Tamamlandı (.github/workflows/ci.yml) |
+| 4 | ~~Çoklu üniversite desteği (multi-tenant dinamik)~~ | ✅ Tamamlandı (FirestoreService.activeUniversiteId) |
 | 5 | Mobil (Android/iOS) paketleme ve dağıtım | Web stabil olunca |
 | 6 | Performans optimizasyonu (pagination, lazy loading) | Veri hacmi artınca |
-| 7 | Gerçek .docx ZIP arşivi üretimi (archive paketi entegrasyonu) | Belge indirme ihtiyacında |
+| 7 | ~~Gerçek .docx ZIP arşivi üretimi (archive paketi entegrasyonu)~~ | ✅ Tamamlandı (archive paketi ile) |
 | 8 | OCR + Gemini AI entegrasyonu (M7 evrak okuma) | İleri fazda |
-| 9 | Excel import/export (M4 personel listesi yükleme) | İleri fazda |
+| 9 | ~~Excel import/export (M4 personel listesi yükleme)~~ | ✅ Tamamlandı (excel paketi ile) |
 
 ---
 
