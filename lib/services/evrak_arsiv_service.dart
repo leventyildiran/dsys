@@ -232,15 +232,11 @@ class EvrakArsivService {
   ///
   /// Dosya yüklendiğinde veya içerik özeti boşsa otomatik çağrılabilir.
   /// google_generative_ai paketi kullanılır.
+  ///
+  /// NOT: Bu özellik düşük önceliklidir ve API anahtarı yapılandırması
+  /// gerektirir. Temel altyapı hazırdır.
   Future<String?> geminiOcrOku(Uint8List dosyaBytes, String dosyaAdi) async {
     try {
-      // ignore: avoid_dynamic_calls
-      final {
-        'google_generative_ai': _,
-      } = <String, dynamic>{
-        'google_generative_ai': null,
-      };
-
       // Gemini AI OCR entegrasyonu:
       // Bu metod, google_generative_ai paketi üzerinden Gemini Pro Vision
       // modelini kullanarak PDF/görsel dosyalardan metin çıkarımı yapar.
@@ -249,9 +245,6 @@ class EvrakArsivService {
       // 1. API anahtarı ayarlanmalı (ortam değişkeni veya Remote Config)
       // 2. Dosya base64 encode edilerek modele gönderilir
       // 3. Dönen metin evrak içerik özetine yazılır
-      //
-      // NOT: Bu özellik düşük önceliklidir ve API anahtarı yapılandırması
-      // gerektirir. Temel altyapı hazırdır.
       debugPrint(
           '[EvrakArsivService.geminiOcrOku] OCR çıkarımı başlatılıyor: $dosyaAdi');
 

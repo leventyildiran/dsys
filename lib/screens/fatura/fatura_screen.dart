@@ -345,9 +345,11 @@ class _FaturaScreenState extends State<FaturaScreen>
                       final pdfBytes =
                           await PdfService.matbuFaturaUret(fatura);
                       if (!context.mounted) return;
+                      final printer =
+                          await Printing.pickPrinter(context: context);
+                      if (printer == null) return;
                       await Printing.directPrintPdf(
-                        printer: await Printing.pickPrinter(context: context) ??
-                            const Printer(url: ''),
+                        printer: printer,
                         onLayout: (_) async => pdfBytes,
                       );
                       provider.basildiIsaretle(fatura.id);
