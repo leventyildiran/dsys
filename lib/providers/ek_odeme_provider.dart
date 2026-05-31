@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/hesaplama_motoru.dart';
 import '../models/ek_odeme_model.dart';
@@ -14,6 +15,15 @@ class EkOdemeProvider extends ChangeNotifier {
   List<EkOdemeModel> _ekOdemeler = [];
   List<EkOdemeModel> get ekOdemeler => _ekOdemeler;
 
+  QueryDocumentSnapshot<Map<String, dynamic>>? _nextCursor;
+  static const int _pageSize = 20;
+
+  bool _hasMore = true;
+  bool get hasMore => _hasMore;
+
+  bool _isLoadingMore = false;
+  bool get isLoadingMore => _isLoadingMore;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -24,17 +34,39 @@ class EkOdemeProvider extends ChangeNotifier {
   String? get basariMesaji => _basariMesaji;
 
   /// Tüm ek ödemeleri yükler.
-  Future<void> ekOdemeleriYukle() async {
+  Future<void> ekOdemeleriYukle({bool yenile = true}) async {
     _isLoading = true;
     _hataMesaji = null;
+    if (yenile) {
+      _nextCursor = null;
+      _hasMore = true;
+    }
     notifyListeners();
 
     try {
-      _ekOdemeler = await _service.getAll();
+      final page = await _service.getPage(
+        limit: _pageSize,
+        startAfterDocument: _nextCursor,
+      );
+      _nextCursor = page.nextCursor;
+      _hasMore = page.hasMore;
+      _ekOdemeler = yenile ? page.items : [..._ekOdemeler, ...page.items];
     } catch (e) {
       _hataMesaji = 'Ek ödemeler yüklenirken hata: $e';
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> dahaFazlaYukle() async {
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    _isLoadingMore = true;
+    notifyListeners();
+    try {
+      await ekOdemeleriYukle(yenile: false);
+    } finally {
+      _isLoadingMore = false;
       notifyListeners();
     }
   }

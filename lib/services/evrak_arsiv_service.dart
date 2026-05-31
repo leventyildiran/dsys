@@ -1,9 +1,15 @@
 import 'dart:typed_data';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 
+import '../core/app_environment.dart';
+import '../core/app_logger.dart';
+import '../core/paginated_result.dart';
 import '../models/evrak_arsiv_model.dart';
+import '../models/evrak_ocr_sonucu.dart';
 import 'firestore_service.dart';
 
 /// Evrak arşiv servis katmanı.
@@ -30,6 +36,35 @@ class EvrakArsivService {
     } catch (e) {
       debugPrint('[EvrakArsivService.getAll] Hata: $e');
       return [];
+    }
+  }
+
+  Future<PaginatedResult<EvrakModel,
+      QueryDocumentSnapshot<Map<String, dynamic>>>> getPage({
+    int limit = 20,
+    QueryDocumentSnapshot<Map<String, dynamic>>? startAfterDocument,
+  }) async {
+    try {
+      final page = await _service.getPage(
+        _collection,
+        limit: limit,
+        startAfterDocument: startAfterDocument,
+        queryBuilder: (ref) => ref.orderBy('olusturmaTarihi', descending: true),
+      );
+      return PaginatedResult(
+        items: page.docs
+            .map((doc) => EvrakModel.fromMap(doc.id, doc.data()))
+            .toList(),
+        hasMore: page.hasMore,
+        nextCursor: page.lastDocument,
+      );
+    } catch (e) {
+      AppLogger.error(
+        'Sayfalı evrak listesi yüklenemedi.',
+        scope: 'evrak_arsiv_service',
+        error: e,
+      );
+      return const PaginatedResult(items: [], hasMore: false);
     }
   }
 
@@ -235,24 +270,95 @@ class EvrakArsivService {
   ///
   /// NOT: Bu özellik düşük önceliklidir ve API anahtarı yapılandırması
   /// gerektirir. Temel altyapı hazırdır.
-  Future<String?> geminiOcrOku(Uint8List dosyaBytes, String dosyaAdi) async {
-    try {
-      // Gemini AI OCR entegrasyonu:
-      // Bu metod, google_generative_ai paketi üzerinden Gemini Pro Vision
-      // modelini kullanarak PDF/görsel dosyalardan metin çıkarımı yapar.
-      //
-      // Kullanım:
-      // 1. API anahtarı ayarlanmalı (ortam değişkeni veya Remote Config)
-      // 2. Dosya base64 encode edilerek modele gönderilir
-      // 3. Dönen metin evrak içerik özetine yazılır
-      debugPrint(
-          '[EvrakArsivService.geminiOcrOku] OCR çıkarımı başlatılıyor: $dosyaAdi');
-
-      // Placeholder: Gerçek implementasyon API anahtarı ile yapılacak
-      return null;
-    } catch (e) {
-      debugPrint('[EvrakArsivService.geminiOcrOku] Hata: $e');
+  Future<EvrakOcrSonucu?> geminiOcrOku(
+    Uint8List dosyaBytes,
+    String dosyaAdi,
+  ) async {
+    if (!AppEnvironment.hasGeminiApiKey) {
+      AppLogger.warning(
+        'Gemini API anahtarı tanımlı değil, OCR atlandı.',
+        scope: 'evrak_arsiv_service',
+      );
       return null;
     }
+
+    try {
+      final model = GenerativeModel(
+        model: 'gemini-1.5-flash',
+        apiKey: AppEnvironment.geminiApiKey,
+      );
+      final response = await model.generateContent([
+        Content.multi([
+          TextPart(_ocrPrompt(dosyaAdi)),
+          DataPart(_contentTypeFromExtension(dosyaAdi), dosyaBytes),
+        ]),
+      ]);
+      final text = response.text?.trim();
+      if (text == null || text.isEmpty) {
+        return null;
+      }
+      return _parseOcrResponse(dosyaAdi, text);
+    } catch (e) {
+      AppLogger.error(
+        'Gemini OCR çağrısı başarısız.',
+        scope: 'evrak_arsiv_service',
+        error: e,
+      );
+      return null;
+    }
+  }
+
+  String _ocrPrompt(String dosyaAdi) => '''
+Bu dosya bir resmi yazışma, üst yazı veya karar evrakı olabilir.
+Dosyayı okuyup aşağıdaki sabit formatta yanıt ver:
+
+BASLIK: ...
+SAYI: ...
+TARIH: ...
+OZET: ...
+ETIKETLER: etiket1, etiket2, etiket3
+
+Kurallar:
+- Tarih boşsa boş bırak.
+- Evrak numarası yoksa boş bırak.
+- Özet en fazla 3 cümle olsun.
+- Etiketler en fazla 5 adet kısa anahtar kelime olsun.
+- Baslık bulunamazsa dosya adından makul bir başlık üret.
+- Yalnızca bu alanları döndür, ekstra açıklama ekleme.
+
+Dosya adı: $dosyaAdi
+''';
+
+  EvrakOcrSonucu _parseOcrResponse(String dosyaAdi, String responseText) {
+    String readField(String name) {
+      final match = RegExp(
+        '^$name\\s*:\\s*(.*)\$',
+        caseSensitive: false,
+        multiLine: true,
+      ).firstMatch(responseText);
+      return match?.group(1)?.trim() ?? '';
+    }
+
+    final baslik = readField('BASLIK');
+    final etiketler = readField('ETIKETLER')
+        .split(',')
+        .map((etiket) => etiket.trim())
+        .where((etiket) => etiket.isNotEmpty)
+        .take(5)
+        .toList();
+
+    return EvrakOcrSonucu(
+      baslik: baslik.isEmpty ? _dosyaAdindanBaslik(dosyaAdi) : baslik,
+      evrakSayisi: readField('SAYI'),
+      evrakTarihi: readField('TARIH'),
+      icerikOzeti: readField('OZET'),
+      etiketler: etiketler,
+      hamCevap: responseText,
+    );
+  }
+
+  String _dosyaAdindanBaslik(String dosyaAdi) {
+    final temizAd = dosyaAdi.split('.').first.replaceAll(RegExp(r'[_-]+'), ' ');
+    return temizAd.trim().isEmpty ? 'Yeni Evrak' : temizAd.trim();
   }
 }

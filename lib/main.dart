@@ -1,8 +1,11 @@
+import 'dart:ui';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'core/app_error_reporter.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/butce_aktarim_provider.dart';
@@ -25,6 +28,25 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await AppErrorReporter.initialize();
+  FlutterError.onError = (details) {
+    AppErrorReporter.recordError(
+      details.exception,
+      details.stack ?? StackTrace.current,
+      reason: 'Flutter framework hatası',
+      fatal: true,
+    );
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppErrorReporter.recordError(
+      error,
+      stack,
+      reason: 'Platform dispatcher hatası',
+      fatal: true,
+    );
+    return true;
+  };
 
   runApp(const DSYSApp());
 }
@@ -115,4 +137,3 @@ class _DSYSAppState extends State<DSYSApp> {
     );
   }
 }
-

@@ -118,6 +118,14 @@ class _FaturaScreenState extends State<FaturaScreen>
   /// Fatura kuyruğu — bekleyen faturaları sırasıyla işler.
   Widget _buildKuyrukTab(FaturaProvider provider, ThemeData theme) {
     if (provider.kuyruk.isEmpty) {
+      if (provider.hasMore) {
+        return Center(
+          child: _buildPaginationFooter(
+            onPressed: provider.dahaFazlaYukle,
+            isLoading: provider.isLoadingMore,
+          ),
+        );
+      }
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -132,8 +140,14 @@ class _FaturaScreenState extends State<FaturaScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: provider.kuyruk.length,
+      itemCount: provider.kuyruk.length + (provider.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= provider.kuyruk.length) {
+          return _buildPaginationFooter(
+            onPressed: provider.dahaFazlaYukle,
+            isLoading: provider.isLoadingMore,
+          );
+        }
         final fatura = provider.kuyruk[index];
         return _buildFaturaKart(fatura, provider, theme, isKuyruk: true);
       },
@@ -157,11 +171,37 @@ class _FaturaScreenState extends State<FaturaScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: provider.faturalar.length,
+      itemCount: provider.faturalar.length + (provider.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= provider.faturalar.length) {
+          return _buildPaginationFooter(
+            onPressed: provider.dahaFazlaYukle,
+            isLoading: provider.isLoadingMore,
+          );
+        }
         final fatura = provider.faturalar[index];
         return _buildFaturaKart(fatura, provider, theme);
       },
+    );
+  }
+
+  Widget _buildPaginationFooter({
+    required Future<void> Function() onPressed,
+    required bool isLoading,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      child: Center(
+        child: isLoading
+            ? const CircularProgressIndicator()
+            : OutlinedButton.icon(
+                onPressed: () {
+                  onPressed();
+                },
+                icon: const Icon(Icons.expand_more),
+                label: const Text('20 kayıt daha yükle'),
+              ),
+      ),
     );
   }
 

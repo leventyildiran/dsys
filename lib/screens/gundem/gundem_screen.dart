@@ -92,11 +92,37 @@ class _GundemScreenState extends State<GundemScreen> {
   Widget _buildListe(GundemProvider provider, ThemeData theme) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: provider.toplantilar.length,
+      itemCount: provider.toplantilar.length + (provider.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= provider.toplantilar.length) {
+          return _buildPaginationFooter(
+            onPressed: provider.dahaFazlaYukle,
+            isLoading: provider.isLoadingMore,
+          );
+        }
         final toplanti = provider.toplantilar[index];
         return _buildToplantiKart(toplanti, provider, theme);
       },
+    );
+  }
+
+  Widget _buildPaginationFooter({
+    required Future<void> Function() onPressed,
+    required bool isLoading,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      child: Center(
+        child: isLoading
+            ? const CircularProgressIndicator()
+            : OutlinedButton.icon(
+                onPressed: () {
+                  onPressed();
+                },
+                icon: const Icon(Icons.expand_more),
+                label: const Text('20 kayıt daha yükle'),
+              ),
+      ),
     );
   }
 

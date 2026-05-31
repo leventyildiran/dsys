@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/butce_aktarim_model.dart';
 import '../services/butce_aktarim_service.dart';
@@ -13,6 +14,15 @@ class ButceAktarimProvider extends ChangeNotifier {
   List<ButceAktarimModel> _aktarimlar = [];
   List<ButceAktarimModel> get aktarimlar => _aktarimlar;
 
+  QueryDocumentSnapshot<Map<String, dynamic>>? _nextCursor;
+  static const int _pageSize = 20;
+
+  bool _hasMore = true;
+  bool get hasMore => _hasMore;
+
+  bool _isLoadingMore = false;
+  bool get isLoadingMore => _isLoadingMore;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -23,17 +33,39 @@ class ButceAktarimProvider extends ChangeNotifier {
   String? get basariMesaji => _basariMesaji;
 
   /// Tüm aktarımları yükler.
-  Future<void> aktarimlariYukle() async {
+  Future<void> aktarimlariYukle({bool yenile = true}) async {
     _isLoading = true;
     _hataMesaji = null;
+    if (yenile) {
+      _nextCursor = null;
+      _hasMore = true;
+    }
     notifyListeners();
 
     try {
-      _aktarimlar = await _service.getAll();
+      final page = await _service.getPage(
+        limit: _pageSize,
+        startAfterDocument: _nextCursor,
+      );
+      _nextCursor = page.nextCursor;
+      _hasMore = page.hasMore;
+      _aktarimlar = yenile ? page.items : [..._aktarimlar, ...page.items];
     } catch (e) {
       _hataMesaji = 'Aktarımlar yüklenirken hata: $e';
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> dahaFazlaYukle() async {
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    _isLoadingMore = true;
+    notifyListeners();
+    try {
+      await aktarimlariYukle(yenile: false);
+    } finally {
+      _isLoadingMore = false;
       notifyListeners();
     }
   }

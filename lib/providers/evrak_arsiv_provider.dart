@@ -1,6 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/evrak_arsiv_model.dart';
+import '../models/evrak_ocr_sonucu.dart';
 import '../services/evrak_arsiv_service.dart';
 
 /// Evrak arşiv state yönetimi.
@@ -13,11 +17,23 @@ class EvrakArsivProvider extends ChangeNotifier {
   List<EvrakModel> _evraklar = [];
   List<EvrakModel> get evraklar => _evraklar;
 
+  QueryDocumentSnapshot<Map<String, dynamic>>? _nextCursor;
+  static const int _pageSize = 20;
+
   List<EvrakModel> _aramaSonuclari = [];
   List<EvrakModel> get aramaSonuclari => _aramaSonuclari;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+
+  bool _isLoadingMore = false;
+  bool get isLoadingMore => _isLoadingMore;
+
+  bool _ocrLoading = false;
+  bool get ocrLoading => _ocrLoading;
+
+  bool _hasMore = true;
+  bool get hasMore => _hasMore;
 
   bool _aramaAktif = false;
   bool get aramaAktif => _aramaAktif;
@@ -28,19 +44,44 @@ class EvrakArsivProvider extends ChangeNotifier {
   String? _basariMesaji;
   String? get basariMesaji => _basariMesaji;
 
+  EvrakOcrSonucu? _sonOcrSonucu;
+  EvrakOcrSonucu? get sonOcrSonucu => _sonOcrSonucu;
+
   /// Tüm evrakları yükler.
-  Future<void> evraklariYukle() async {
+  Future<void> evraklariYukle({bool yenile = true}) async {
     _isLoading = true;
     _hataMesaji = null;
     _aramaAktif = false;
+    if (yenile) {
+      _nextCursor = null;
+      _hasMore = true;
+    }
     notifyListeners();
 
     try {
-      _evraklar = await _service.getAll();
+      final page = await _service.getPage(
+        limit: _pageSize,
+        startAfterDocument: _nextCursor,
+      );
+      _nextCursor = page.nextCursor;
+      _hasMore = page.hasMore;
+      _evraklar = yenile ? page.items : [..._evraklar, ...page.items];
     } catch (e) {
       _hataMesaji = 'Evraklar yüklenirken hata: $e';
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> dahaFazlaYukle() async {
+    if (_isLoading || _isLoadingMore || !_hasMore || _aramaAktif) return;
+    _isLoadingMore = true;
+    notifyListeners();
+    try {
+      await evraklariYukle(yenile: false);
+    } finally {
+      _isLoadingMore = false;
       notifyListeners();
     }
   }
@@ -124,6 +165,35 @@ class EvrakArsivProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<EvrakOcrSonucu?> dosyadanOcrOku({
+    required Uint8List dosyaBytes,
+    required String dosyaAdi,
+  }) async {
+    _ocrLoading = true;
+    _hataMesaji = null;
+    notifyListeners();
+
+    try {
+      _sonOcrSonucu = await _service.geminiOcrOku(dosyaBytes, dosyaAdi);
+      if (_sonOcrSonucu == null) {
+        _hataMesaji =
+            'OCR sonucu alınamadı. Gemini anahtarını ve dosya içeriğini kontrol edin.';
+      }
+      return _sonOcrSonucu;
+    } catch (e) {
+      _hataMesaji = 'OCR işlemi başarısız oldu: $e';
+      return null;
+    } finally {
+      _ocrLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void ocrSonucunuTemizle() {
+    _sonOcrSonucu = null;
+    notifyListeners();
   }
 
   void mesajlariTemizle() {

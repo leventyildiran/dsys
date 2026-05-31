@@ -89,11 +89,37 @@ class _DisHekimligiScreenState extends State<DisHekimligiScreen> {
   Widget _buildListe(DisHekimligiProvider provider, ThemeData theme) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: provider.dagitimlar.length,
+      itemCount: provider.dagitimlar.length + (provider.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= provider.dagitimlar.length) {
+          return _buildPaginationFooter(
+            onPressed: provider.dahaFazlaYukle,
+            isLoading: provider.isLoadingMore,
+          );
+        }
         final dagitim = provider.dagitimlar[index];
         return _buildDagitimKart(dagitim, theme);
       },
+    );
+  }
+
+  Widget _buildPaginationFooter({
+    required Future<void> Function() onPressed,
+    required bool isLoading,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      child: Center(
+        child: isLoading
+            ? const CircularProgressIndicator()
+            : OutlinedButton.icon(
+                onPressed: () {
+                  onPressed();
+                },
+                icon: const Icon(Icons.expand_more),
+                label: const Text('20 kayıt daha yükle'),
+              ),
+      ),
     );
   }
 

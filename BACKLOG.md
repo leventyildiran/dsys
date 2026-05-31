@@ -47,29 +47,26 @@
 | 36 | Unit testleri (HesaplamaMotoru, TurkceFormat, KararMetni, UserModel) | Faz 3 |
 | 37 | CI/CD pipeline (GitHub Actions → analyze, test, build, deploy) | Faz 3 |
 | 38 | Excel import/export servisi (personel listesi yükleme/indirme) | Faz 3 |
+| 39 | Güvenlik hijyeni — credential politikası, tarama rutini ve remediation adımları | Faz 4 |
+| 40 | Test kapsamı güçlendirme — provider/service testleri ve coverage hedefi | Faz 4 |
+| 41 | CI coverage eşiği — %60 altı için fail kapısı | Faz 4 |
+| 42 | Firestore listeleme pagination — modül listelerinde 20 kayıt/sayfa | Faz 4 |
+| 43 | Operasyon paketi — loglama, hata izleme ve rollback prosedürü | Faz 4 |
+| 44 | Modül kabul kriterleri — ortak done checklist'i | Faz 4 |
+| 45 | Mobil paketleme ve dağıtım workflow/artifact desteği | Faz 4 |
+| 46 | Gemini OCR entegrasyonu — evrak formunu dosyadan doldurma | Faz 4 |
 
 ---
 
 ## 🔄 Devam Eden
 
-| # | Öğe | Durum |
-|---|-----|-------|
-| 1 | Güvenlik hijyeni — credential temizliği ve SECURITY.md oluşturulması | 🔄 Aktif |
+Şu anda aktif geliştirme maddesi yok.
 
 ---
 
 ## 📌 Sıradaki (Öncelik Sırası)
 
-| # | Öğe | Modül | Öncelik |
-|---|-----|-------|---------|
-| 1 | Güvenlik hijyeni — credential temizliği, SECURITY.md politikası | Altyapı | 🔴 Acil |
-| 2 | Test kapsamı güçlendirme — provider/service testleri, coverage ≥60% hedefi | Kalite | 🟠 Yüksek |
-| 3 | CI'ya coverage eşiği ekleme (lcov raporunda %60 altı → fail) | CI/CD | 🟠 Yüksek |
-| 4 | Performans — Firestore listeleme pagination (20 öğe/sayfa) | Altyapı | 🟡 Orta |
-| 5 | Operasyon paketi — loglama, hata izleme (Crashlytics), rollback prosedürü | DevOps | 🟡 Orta |
-| 6 | Modül kabul kriterleri — her ekran/servis için "done" kontrol listesi | Dokümantasyon | 🟡 Orta |
-| 7 | Mobil (Android/iOS) paketleme ve dağıtım | Release | 🔵 Düşük |
-| 8 | OCR + Gemini AI entegrasyonu (M7 evrak okuma) | İnovasyon | 🔵 Düşük |
+Yeni ihtiyaçlar keşfedildikçe bu bölüm tekrar doldurulacaktır.
 
 ---
 

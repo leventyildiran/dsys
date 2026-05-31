@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/gundem_model.dart';
 import '../services/gundem_service.dart';
@@ -13,6 +14,15 @@ class GundemProvider extends ChangeNotifier {
   List<ToplantiModel> _toplantilar = [];
   List<ToplantiModel> get toplantilar => _toplantilar;
 
+  QueryDocumentSnapshot<Map<String, dynamic>>? _nextCursor;
+  static const int _pageSize = 20;
+
+  bool _hasMore = true;
+  bool get hasMore => _hasMore;
+
+  bool _isLoadingMore = false;
+  bool get isLoadingMore => _isLoadingMore;
+
   ToplantiModel? _seciliToplanti;
   ToplantiModel? get seciliToplanti => _seciliToplanti;
 
@@ -26,17 +36,39 @@ class GundemProvider extends ChangeNotifier {
   String? get basariMesaji => _basariMesaji;
 
   /// Toplantıları yükler.
-  Future<void> toplantilariYukle() async {
+  Future<void> toplantilariYukle({bool yenile = true}) async {
     _isLoading = true;
     _hataMesaji = null;
+    if (yenile) {
+      _nextCursor = null;
+      _hasMore = true;
+    }
     notifyListeners();
 
     try {
-      _toplantilar = await _service.getAll();
+      final page = await _service.getPage(
+        limit: _pageSize,
+        startAfterDocument: _nextCursor,
+      );
+      _nextCursor = page.nextCursor;
+      _hasMore = page.hasMore;
+      _toplantilar = yenile ? page.items : [..._toplantilar, ...page.items];
     } catch (e) {
       _hataMesaji = 'Toplantılar yüklenirken hata: $e';
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> dahaFazlaYukle() async {
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    _isLoadingMore = true;
+    notifyListeners();
+    try {
+      await toplantilariYukle(yenile: false);
+    } finally {
+      _isLoadingMore = false;
       notifyListeners();
     }
   }
