@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:file_saver/file_saver.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -220,16 +224,28 @@ class _GundemScreenState extends State<GundemScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final belge = provider.gundemBelgesiUret();
               if (belge != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Gündem belgesi üretildi.')),
+                // Belgeyi dosya olarak indir
+                final bytes = Uint8List.fromList(utf8.encode(belge));
+                await FileSaver.instance.saveFile(
+                  name:
+                      'gundem_${toplanti.toplantiNo}_${toplanti.toplantiTarihi}',
+                  bytes: bytes,
+                  ext: 'txt',
+                  mimeType: MimeType.text,
                 );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Gündem belgesi indirildi.')),
+                  );
+                }
               }
-              Navigator.pop(ctx);
+              if (ctx.mounted) Navigator.pop(ctx);
             },
-            child: const Text('Belge Üret'),
+            child: const Text('Belge İndir'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx),

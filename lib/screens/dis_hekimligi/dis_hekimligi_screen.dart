@@ -187,58 +187,152 @@ class _DisHekimligiScreenState extends State<DisHekimligiScreen> {
     final donemController = TextEditingController();
     final brutGelirController = TextEditingController();
 
+    // Varsayılan oranlar
+    double akademikOran = 0.70;
+    double yoneticiOran = 0.20;
+    double mesaiDisiOran = 0.10;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Yeni Diş Hekimliği Dağıtımı'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: birimAdController,
-                decoration: const InputDecoration(labelText: 'Birim Adı'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final brutGelir = double.tryParse(
+                  brutGelirController.text.replaceAll(',', '.')) ??
+              0;
+          final akademikTutar = brutGelir * akademikOran;
+          final yoneticiTutar = brutGelir * yoneticiOran;
+          final mesaiDisiTutar = brutGelir * mesaiDisiOran;
+
+          return AlertDialog(
+            title: const Text('Yeni Diş Hekimliği Dağıtımı'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: birimAdController,
+                    decoration: const InputDecoration(labelText: 'Birim Adı'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: donemController,
+                    decoration: const InputDecoration(labelText: 'Dönem'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: brutGelirController,
+                    decoration: const InputDecoration(
+                      labelText: 'Toplam Brüt Gelir',
+                      helperText: 'Otomatik dağıtım hesaplanacaktır',
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setDialogState(() {}),
+                  ),
+                  const SizedBox(height: 16),
+                  // Oran ayarlama
+                  Text('Dağıtım Oranları',
+                      style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  _buildOranSlider(
+                    'Akademik/İdari (%${(akademikOran * 100).toInt()})',
+                    akademikOran,
+                    (v) => setDialogState(() {
+                      akademikOran = v;
+                      // Diğer oranları yeniden dengelemek için
+                      final kalan = 1.0 - akademikOran;
+                      yoneticiOran = kalan * 0.667; // 2/3
+                      mesaiDisiOran = kalan * 0.333; // 1/3
+                    }),
+                  ),
+                  _buildOranSlider(
+                    'Yönetici (%${(yoneticiOran * 100).toInt()})',
+                    yoneticiOran,
+                    (v) => setDialogState(() {
+                      yoneticiOran = v;
+                      mesaiDisiOran = (1.0 - akademikOran - yoneticiOran)
+                          .clamp(0.0, 1.0);
+                    }),
+                  ),
+                  _buildOranSlider(
+                    'Mesai Dışı (%${(mesaiDisiOran * 100).toInt()})',
+                    mesaiDisiOran,
+                    (v) => setDialogState(() {
+                      mesaiDisiOran = v;
+                      yoneticiOran = (1.0 - akademikOran - mesaiDisiOran)
+                          .clamp(0.0, 1.0);
+                    }),
+                  ),
+                  if (brutGelir > 0) ...[
+                    const Divider(),
+                    Text('Hesaplanan Dağıtım',
+                        style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 8),
+                    _buildHesapSatir('Akademik/İdari',
+                        TurkceFormat.para(akademikTutar)),
+                    _buildHesapSatir(
+                        'Yönetici Payı', TurkceFormat.para(yoneticiTutar)),
+                    _buildHesapSatir(
+                        'Mesai Dışı', TurkceFormat.para(mesaiDisiTutar)),
+                  ],
+                ],
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: donemController,
-                decoration: const InputDecoration(labelText: 'Dönem'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('İptal'),
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: brutGelirController,
-                decoration:
-                    const InputDecoration(labelText: 'Toplam Brüt Gelir'),
-                keyboardType: TextInputType.number,
+              FilledButton(
+                onPressed: () {
+                  final model = DisHekimligiDagitimModel(
+                    id: '',
+                    birimId: '',
+                    birimAd: birimAdController.text,
+                    donem: donemController.text,
+                    toplamBrutGelir: brutGelir,
+                    akademikIdariTutar: akademikTutar,
+                    yoneticiTutar: yoneticiTutar,
+                    mesaiDisiTutar: mesaiDisiTutar,
+                  );
+                  context.read<DisHekimligiProvider>().dagitimOlustur(model);
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Oluştur'),
               ),
             ],
-          ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildOranSlider(
+      String etiket, double deger, ValueChanged<double> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(etiket, style: const TextStyle(fontSize: 12)),
+        Slider(
+          value: deger.clamp(0.0, 1.0),
+          min: 0,
+          max: 1.0,
+          divisions: 20,
+          onChanged: onChanged,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('İptal'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final brutGelir = double.tryParse(
-                      brutGelirController.text.replaceAll(',', '.')) ??
-                  0;
-              final model = DisHekimligiDagitimModel(
-                id: '',
-                birimId: '',
-                birimAd: birimAdController.text,
-                donem: donemController.text,
-                toplamBrutGelir: brutGelir,
-                akademikIdariTutar: 0,
-                yoneticiTutar: 0,
-                mesaiDisiTutar: 0,
-              );
-              context.read<DisHekimligiProvider>().dagitimOlustur(model);
-              Navigator.pop(ctx);
-            },
-            child: const Text('Oluştur'),
-          ),
+      ],
+    );
+  }
+
+  Widget _buildHesapSatir(String etiket, String deger) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(etiket, style: const TextStyle(fontSize: 13)),
+          Text(deger,
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 export 'aylik_hakedis_model.dart';
 export 'birim_model.dart';
 export 'butce_aktarim_model.dart';
+export 'butce_limit_model.dart';
 export 'dagitim_model.dart';
 export 'danismanlik_model.dart';
 export 'dis_hekimligi_model.dart';

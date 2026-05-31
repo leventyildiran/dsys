@@ -59,6 +59,15 @@ dependencies:
   file_saver: ^0.2.14
   universal_html: ^2.2.4
 
+  # Firebase Storage (Modül 7 - Evrak dosya yükleme)
+  firebase_storage: ^12.4.4
+
+  # Charts (Modül 6 - Grafiksel raporlama)
+  fl_chart: ^0.70.2
+
+  # AI OCR Fallback (Modül 7/8 - Gemini entegrasyonu)
+  google_generative_ai: ^0.4.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

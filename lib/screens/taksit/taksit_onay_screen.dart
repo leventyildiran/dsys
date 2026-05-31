@@ -315,15 +315,9 @@ class _TaksitOnayScreenState extends State<TaksitOnayScreen> {
     TaksitModel taksit,
     TaksitProvider provider,
   ) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Karar belgesi oluşturuluyor...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-
-    final dagitimlar = await provider.sonDagitimSonucu?.dagitimlar ?? [];
-    if (dagitimlar.isEmpty) {
+    // Null guard: sonDagitimSonucu state'i olmayabilir
+    final dagitimSonucu = provider.sonDagitimSonucu;
+    if (dagitimSonucu == null || dagitimSonucu.dagitimlar.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -334,6 +328,14 @@ class _TaksitOnayScreenState extends State<TaksitOnayScreen> {
       return;
     }
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Karar belgesi oluşturuluyor...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    final dagitimlar = dagitimSonucu.dagitimlar;
     final belge = await provider.kararBelgesiUret(taksit, dagitimlar);
     if (!mounted) return;
     if (belge != null && belge.uretimHazir) {

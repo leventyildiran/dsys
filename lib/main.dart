@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/butce_aktarim_provider.dart';
+import 'providers/butce_takip_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/dis_hekimligi_provider.dart';
 import 'providers/ek_odeme_provider.dart';
@@ -47,6 +48,7 @@ class _DSYSAppState extends State<DSYSApp> {
   late final RaporlamaProvider _raporlamaProvider;
   late final EvrakArsivProvider _evrakArsivProvider;
   late final FaturaProvider _faturaProvider;
+  late final ButceTakipProvider _butceTakipProvider;
   late final GoRouter _router;
 
   @override
@@ -63,11 +65,13 @@ class _DSYSAppState extends State<DSYSApp> {
     _raporlamaProvider = RaporlamaProvider();
     _evrakArsivProvider = EvrakArsivProvider();
     _faturaProvider = FaturaProvider();
+    _butceTakipProvider = ButceTakipProvider();
     _router = AppRouter.router(_authProvider);
   }
 
   @override
   void dispose() {
+    _butceTakipProvider.dispose();
     _faturaProvider.dispose();
     _evrakArsivProvider.dispose();
     _raporlamaProvider.dispose();
@@ -98,6 +102,7 @@ class _DSYSAppState extends State<DSYSApp> {
         ChangeNotifierProvider.value(value: _raporlamaProvider),
         ChangeNotifierProvider.value(value: _evrakArsivProvider),
         ChangeNotifierProvider.value(value: _faturaProvider),
+        ChangeNotifierProvider.value(value: _butceTakipProvider),
       ],
       child: MaterialApp.router(
         title: 'DSYS - Döner Sermaye Yönetim Sistemi',

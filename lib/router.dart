@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'providers/auth_provider.dart';
 import 'screens/butce_aktarim/butce_aktarim_screen.dart';
+import 'screens/butce_takip/butce_takip_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/dis_hekimligi/dis_hekimligi_screen.dart';
 import 'screens/ek_odeme/ek_odeme_screen.dart';
@@ -107,6 +108,11 @@ class AppRouter {
         GoRoute(
           path: '/fatura',
           builder: (context, state) => const FaturaScreen(),
+        ),
+        // Modül 9: Bütçe Ödenek Takibi
+        GoRoute(
+          path: '/butce-takip',
+          builder: (context, state) => const ButceTakipScreen(),
         ),
       ],
     );
