@@ -26,6 +26,19 @@
 | 15 | Taksit servisi & Dağıtım servisi (alt-koleksiyon CRUD) | Faz 1 |
 | 16 | Görevli personel servisi & PersonelHakedis servisi | Faz 1 |
 | 17 | Web deploy (Firebase Hosting: dsys-44b8e.web.app) | Faz 1 |
+| 18 | Taksit onay akışı → otomatik dağıtım hesaplama → Firestore'a yazma (M1) | Faz 2 |
+| 19 | Word/DOCX belge üretimi (karar metni + faaliyet cetveli tablosu) (M1) | Faz 2 |
+| 20 | EYDMA tavan kontrolünün canlı veriye bağlanması (M1) | Faz 2 |
+| 21 | Bütçe Aktarımları Modülü (M2) — model, servis, provider, ekran | Faz 2 |
+| 22 | Dönemsel Ek Ödeme Dağıtımı (M3) — model, servis, provider, ekran | Faz 2 |
+| 23 | Diş Hekimliği Katkı Payı Dağıtım Modülü (M4) — model, servis, provider, ekran | Faz 2 |
+| 24 | Toplantı Gündem Derleyici (M5) — model, servis, provider, ekran, sürükle-bırak | Faz 2 |
+| 25 | Detaylı Arama, Raporlama ve Arşivleme (M6) — servis, provider, ekran (3 tab) | Faz 2 |
+| 26 | Dahili Evrak Arşivi (M7) — model, servis, provider, ekran, arama/filtreleme | Faz 2 |
+| 27 | Otomatik Fatura Basım / PDF Önizleme (M8) — model, servis, provider, ekran, metin ayrıştırma | Faz 2 |
+| 28 | Router güncellemesi — tüm modül rotaları eklendi | Faz 2 |
+| 29 | main.dart — tüm modül provider'ları entegre edildi | Faz 2 |
+| 30 | Dashboard navigasyon — tüm modüller menüye eklendi | Faz 2 |
 
 ---
 
@@ -33,7 +46,7 @@
 
 | # | Öğe | Durum |
 |---|-----|-------|
-| 1 | Modül 1 iyileştirmeler: Danışmanlık taksit işlem akışı (onay → dağıtım → karar belgesi üretimi) | Geliştiriliyor |
+| — | Şu an devam eden aktif görev bulunmamaktadır. | — |
 
 ---
 
@@ -41,16 +54,7 @@
 
 | # | Öğe | Modül | Öncelik |
 |---|-----|-------|---------|
-| 1 | Taksit onay akışı → otomatik dağıtım hesaplama → Firestore'a yazma | M1 | 🔴 Yüksek |
-| 2 | Word/DOCX belge üretimi (karar metni + faaliyet cetveli tablosu) | M1 | 🔴 Yüksek |
-| 3 | EYDMA tavan kontrolünün canlı veriye bağlanması | M1 | 🟡 Orta |
-| 4 | Bütçe Aktarımları Modülü (Modül 2) | M2 | 🟡 Orta |
-| 5 | Dönemsel Ek Ödeme Dağıtımı (Modül 3) | M3 | 🟡 Orta |
-| 6 | Diş Hekimliği Katkı Payı Dağıtım Modülü (Modül 4) | M4 | 🟡 Orta |
-| 7 | Toplantı Gündem Derleyici (Modül 5) | M5 | 🟢 Düşük |
-| 8 | Detaylı Arama, Raporlama ve Arşivleme (Modül 6) | M6 | 🟢 Düşük |
-| 9 | Dahili Evrak Arşivi / EBYS / OCR (Modül 7) | M7 | 🟢 Düşük |
-| 10 | Otomatik Fatura Basım / PDF Önizleme (Modül 8) | M8 | 🟢 Düşük |
+| — | Tüm temel modüller tamamlandı. İyileştirme ve detaylandırma aşamasına geçilecek. | — | — |
 
 ---
 
@@ -64,6 +68,9 @@
 | 4 | Çoklu üniversite desteği (multi-tenant dinamik) | İlk canlıdan sonra değerlendirilecek |
 | 5 | Mobil (Android/iOS) paketleme ve dağıtım | Web stabil olunca |
 | 6 | Performans optimizasyonu (pagination, lazy loading) | Veri hacmi artınca |
+| 7 | Gerçek .docx ZIP arşivi üretimi (archive paketi entegrasyonu) | Belge indirme ihtiyacında |
+| 8 | OCR + Gemini AI entegrasyonu (M7 evrak okuma) | İleri fazda |
+| 9 | Excel import/export (M4 personel listesi yükleme) | İleri fazda |
 
 ---
 

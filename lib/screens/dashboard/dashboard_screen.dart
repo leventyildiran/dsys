@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/user_model.dart';
@@ -98,6 +99,34 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       const _NavItem(
         icon: Icons.receipt_long_rounded,
         label: 'Taksit Formu',
+      ),
+      const _NavItem(
+        icon: Icons.swap_horiz_rounded,
+        label: 'Bütçe Aktarım',
+      ),
+      const _NavItem(
+        icon: Icons.payments_rounded,
+        label: 'Ek Ödeme',
+      ),
+      const _NavItem(
+        icon: Icons.medical_services_rounded,
+        label: 'Diş Hekimliği',
+      ),
+      const _NavItem(
+        icon: Icons.event_note_rounded,
+        label: 'Gündem',
+      ),
+      const _NavItem(
+        icon: Icons.analytics_rounded,
+        label: 'Raporlama',
+      ),
+      const _NavItem(
+        icon: Icons.folder_rounded,
+        label: 'Evrak Arşiv',
+      ),
+      const _NavItem(
+        icon: Icons.print_rounded,
+        label: 'Fatura',
       ),
       const _NavItem(
         icon: Icons.school_rounded,
@@ -203,14 +232,56 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 2:
         return const DanismanlikFormScreen();
       case 3:
-        return const PersonelYonetimScreen();
+        // Bütçe Aktarım — ayrı rota kullanır
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go('/butce-aktarim');
+        });
+        return const Center(child: CircularProgressIndicator());
       case 4:
-        return const FirmaYonetimScreen();
+        // Ek Ödeme — ayrı rota kullanır
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go('/ek-odeme');
+        });
+        return const Center(child: CircularProgressIndicator());
       case 5:
-        return const KullaniciYonetimScreen();
+        // Diş Hekimliği — ayrı rota kullanır
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go('/dis-hekimligi');
+        });
+        return const Center(child: CircularProgressIndicator());
       case 6:
-        return const BirimYonetimScreen();
+        // Gündem — ayrı rota kullanır
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go('/gundem');
+        });
+        return const Center(child: CircularProgressIndicator());
       case 7:
+        // Raporlama — ayrı rota kullanır
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go('/raporlama');
+        });
+        return const Center(child: CircularProgressIndicator());
+      case 8:
+        // Evrak Arşiv — ayrı rota kullanır
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go('/evrak-arsiv');
+        });
+        return const Center(child: CircularProgressIndicator());
+      case 9:
+        // Fatura — ayrı rota kullanır
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go('/fatura');
+        });
+        return const Center(child: CircularProgressIndicator());
+      case 10:
+        return const PersonelYonetimScreen();
+      case 11:
+        return const FirmaYonetimScreen();
+      case 12:
+        return const KullaniciYonetimScreen();
+      case 13:
+        return const BirimYonetimScreen();
+      case 14:
         return const SistemAyarlariScreen();
       default:
         assert(false, 'Geçersiz navigasyon index: $_selectedIndex');

@@ -86,6 +86,25 @@ class FirestoreService {
     await collection(collectionPath).doc(docId).delete();
   }
 
+  /// Tek bir doküman ekler ve referansını döner.
+  Future<DocumentReference<Map<String, dynamic>>> add(
+    String collectionPath,
+    Map<String, dynamic> data,
+  ) async {
+    return collection(collectionPath).add(data);
+  }
+
+  /// Basit alan bazlı filtreleme (where sorgusu).
+  Future<QuerySnapshot<Map<String, dynamic>>> where(
+    String collectionPath, {
+    required String field,
+    required dynamic isEqualTo,
+  }) async {
+    return collection(collectionPath)
+        .where(field, isEqualTo: isEqualTo)
+        .get();
+  }
+
   /// Yeni bir WriteBatch oluşturur (toplu yazma işlemleri için).
   WriteBatch batch() => _firestore.batch();
 

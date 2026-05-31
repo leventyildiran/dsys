@@ -1,9 +1,16 @@
 export 'belge_uretim_servisi.dart';
+export 'butce_aktarim_service.dart';
 export 'dagitim_service.dart';
 export 'data_service.dart';
+export 'dis_hekimligi_service.dart';
+export 'ek_odeme_service.dart';
+export 'evrak_arsiv_service.dart';
+export 'fatura_service.dart';
 export 'firestore_service.dart';
 export 'gorevli_personel_service.dart';
+export 'gundem_service.dart';
 export 'personel_hakedis_service.dart';
+export 'raporlama_service.dart';
 export 'taksit_onay_servisi.dart';
 export 'taksit_service.dart';
 export 'user_service.dart';
