@@ -1,5 +1,9 @@
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:universal_html/html.dart' as html;
 
 import '../../models/evrak_arsiv_model.dart';
 import '../../providers/evrak_arsiv_provider.dart';
@@ -148,11 +152,38 @@ class _EvrakArsivScreenState extends State<EvrakArsivScreen> {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: evraklar.length,
+      itemCount:
+          evraklar.length + (!provider.aramaAktif && provider.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (!provider.aramaAktif && index >= evraklar.length) {
+          return _buildPaginationFooter(
+            onPressed: provider.dahaFazlaYukle,
+            isLoading: provider.isLoadingMore,
+          );
+        }
         final evrak = evraklar[index];
         return _buildEvrakKart(evrak, provider, theme);
       },
+    );
+  }
+
+  Widget _buildPaginationFooter({
+    required Future<void> Function() onPressed,
+    required bool isLoading,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      child: Center(
+        child: isLoading
+            ? const CircularProgressIndicator()
+            : OutlinedButton.icon(
+                onPressed: () {
+                  onPressed();
+                },
+                icon: const Icon(Icons.expand_more),
+                label: const Text('20 kayıt daha yükle'),
+              ),
+      ),
     );
   }
 
@@ -224,6 +255,9 @@ class _EvrakArsivScreenState extends State<EvrakArsivScreen> {
   void _yeniEvrakDialog(BuildContext context) {
     final baslikController = TextEditingController();
     final evrakSayisiController = TextEditingController();
+    final evrakTarihiController = TextEditingController();
+    final icerikOzetiController = TextEditingController();
+    final etiketController = TextEditingController();
     EvrakTuru secilenTur = EvrakTuru.diger;
 
     showDialog(
@@ -235,6 +269,37 @@ class _EvrakArsivScreenState extends State<EvrakArsivScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                FilledButton.tonalIcon(
+                  onPressed: () async {
+                    final dosya = await _pickFileForOcr(context);
+                    if (dosya == null) return;
+
+                    final sonuc = await context
+                        .read<EvrakArsivProvider>()
+                        .dosyadanOcrOku(
+                          dosyaBytes: dosya.bytes,
+                          dosyaAdi: dosya.name,
+                        );
+                    if (sonuc == null) return;
+
+                    setDialogState(() {
+                      baslikController.text = sonuc.baslik;
+                      evrakSayisiController.text = sonuc.evrakSayisi;
+                      evrakTarihiController.text = sonuc.evrakTarihi;
+                      icerikOzetiController.text = sonuc.icerikOzeti;
+                      etiketController.text = sonuc.etiketler.join(', ');
+                      secilenTur = EvrakTuru.ustYazi;
+                    });
+                  },
+                  icon: const Icon(Icons.document_scanner_outlined),
+                  label: const Text('Dosya seç + Gemini OCR'),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Gemini OCR için uygulamayı --dart-define=GEMINI_API_KEY=... ile başlatın.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: baslikController,
                   decoration: const InputDecoration(labelText: 'Başlık'),
@@ -243,6 +308,12 @@ class _EvrakArsivScreenState extends State<EvrakArsivScreen> {
                 TextField(
                   controller: evrakSayisiController,
                   decoration: const InputDecoration(labelText: 'Evrak Sayısı'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: evrakTarihiController,
+                  decoration:
+                      const InputDecoration(labelText: 'Evrak Tarihi'),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<EvrakTuru>(
@@ -260,6 +331,20 @@ class _EvrakArsivScreenState extends State<EvrakArsivScreen> {
                     }
                   },
                 ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: etiketController,
+                  decoration: const InputDecoration(
+                    labelText: 'Etiketler',
+                    hintText: 'ödenek, kurul, danışmanlık',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: icerikOzetiController,
+                  maxLines: 4,
+                  decoration: const InputDecoration(labelText: 'İçerik Özeti'),
+                ),
               ],
             ),
           ),
@@ -275,6 +360,13 @@ class _EvrakArsivScreenState extends State<EvrakArsivScreen> {
                   baslik: baslikController.text,
                   evrakTuru: secilenTur,
                   evrakSayisi: evrakSayisiController.text,
+                  evrakTarihi: evrakTarihiController.text,
+                  icerikOzeti: icerikOzetiController.text,
+                  etiketler: etiketController.text
+                      .split(',')
+                      .map((etiket) => etiket.trim())
+                      .where((etiket) => etiket.isNotEmpty)
+                      .toList(),
                 );
                 context.read<EvrakArsivProvider>().evrakOlustur(model);
                 Navigator.pop(ctx);
@@ -286,4 +378,50 @@ class _EvrakArsivScreenState extends State<EvrakArsivScreen> {
       ),
     );
   }
+
+  Future<_SelectedEvrakDosyasi?> _pickFileForOcr(BuildContext context) async {
+    if (!kIsWeb) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Dosya tabanlı OCR şu anda web arayüzünde destekleniyor.'),
+          ),
+        );
+      }
+      return null;
+    }
+
+    final input = html.FileUploadInputElement()
+      ..accept = '.pdf,.png,.jpg,.jpeg,.doc,.docx'
+      ..click();
+    await input.onChange.first;
+    final file = input.files?.first;
+    if (file == null) return null;
+
+    final reader = html.FileReader();
+    reader.readAsArrayBuffer(file);
+    await reader.onLoadEnd.first;
+
+    final result = reader.result;
+    if (result is ByteBuffer) {
+      return _SelectedEvrakDosyasi(
+        name: file.name,
+        bytes: Uint8List.view(result),
+      );
+    }
+    if (result is Uint8List) {
+      return _SelectedEvrakDosyasi(name: file.name, bytes: result);
+    }
+    return null;
+  }
+}
+
+class _SelectedEvrakDosyasi {
+  const _SelectedEvrakDosyasi({
+    required this.name,
+    required this.bytes,
+  });
+
+  final String name;
+  final Uint8List bytes;
 }

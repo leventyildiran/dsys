@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -160,6 +161,52 @@ class _RaporlamaScreenState extends State<RaporlamaScreen>
               ),
             ),
           ),
+          const SizedBox(height: 24),
+          // Birim bazlı gelir dağılımı grafiği
+          if (provider.birimRaporu.isNotEmpty) ...[
+            Text('Birim Gelir Dağılımı',
+                style: theme.textTheme.titleMedium),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 200,
+              child: PieChart(
+                PieChartData(
+                  sections: _buildPieChartSections(provider),
+                  centerSpaceRadius: 40,
+                  sectionsSpace: 2,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Legend
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: provider.birimRaporu
+                  .take(6)
+                  .toList()
+                  .asMap()
+                  .entries
+                  .map((entry) => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: _chartColors[
+                                  entry.key % _chartColors.length],
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(entry.value.birimAd,
+                              style: theme.textTheme.bodySmall),
+                        ],
+                      ))
+                  .toList(),
+            ),
+          ],
         ],
       ),
     );
@@ -267,5 +314,48 @@ class _RaporlamaScreenState extends State<RaporlamaScreen>
         );
       },
     );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // GRAFİK YARDIMCILARI
+  // ─────────────────────────────────────────────────────────────
+
+  static const List<Color> _chartColors = [
+    Colors.blue,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.red,
+    Colors.teal,
+    Colors.indigo,
+    Colors.amber,
+  ];
+
+  List<PieChartSectionData> _buildPieChartSections(
+      RaporlamaProvider provider) {
+    final toplamGelir =
+        provider.birimRaporu.fold<double>(0, (sum, r) => sum + r.toplamGelir);
+    if (toplamGelir == 0) return [];
+
+    return provider.birimRaporu
+        .take(6)
+        .toList()
+        .asMap()
+        .entries
+        .map((entry) {
+      final rapor = entry.value;
+      final oran = rapor.toplamGelir / toplamGelir * 100;
+      return PieChartSectionData(
+        value: rapor.toplamGelir,
+        title: '%${oran.toStringAsFixed(0)}',
+        color: _chartColors[entry.key % _chartColors.length],
+        radius: 60,
+        titleStyle: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      );
+    }).toList();
   }
 }

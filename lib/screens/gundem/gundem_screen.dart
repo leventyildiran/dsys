@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:file_saver/file_saver.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -88,11 +92,37 @@ class _GundemScreenState extends State<GundemScreen> {
   Widget _buildListe(GundemProvider provider, ThemeData theme) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: provider.toplantilar.length,
+      itemCount: provider.toplantilar.length + (provider.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= provider.toplantilar.length) {
+          return _buildPaginationFooter(
+            onPressed: provider.dahaFazlaYukle,
+            isLoading: provider.isLoadingMore,
+          );
+        }
         final toplanti = provider.toplantilar[index];
         return _buildToplantiKart(toplanti, provider, theme);
       },
+    );
+  }
+
+  Widget _buildPaginationFooter({
+    required Future<void> Function() onPressed,
+    required bool isLoading,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      child: Center(
+        child: isLoading
+            ? const CircularProgressIndicator()
+            : OutlinedButton.icon(
+                onPressed: () {
+                  onPressed();
+                },
+                icon: const Icon(Icons.expand_more),
+                label: const Text('20 kayıt daha yükle'),
+              ),
+      ),
     );
   }
 
@@ -220,16 +250,28 @@ class _GundemScreenState extends State<GundemScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final belge = provider.gundemBelgesiUret();
               if (belge != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Gündem belgesi üretildi.')),
+                // Belgeyi dosya olarak indir
+                final bytes = Uint8List.fromList(utf8.encode(belge));
+                await FileSaver.instance.saveFile(
+                  name:
+                      'gundem_${toplanti.toplantiNo}_${toplanti.toplantiTarihi}',
+                  bytes: bytes,
+                  ext: 'txt',
+                  mimeType: MimeType.text,
                 );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Gündem belgesi indirildi.')),
+                  );
+                }
               }
-              Navigator.pop(ctx);
+              if (ctx.mounted) Navigator.pop(ctx);
             },
-            child: const Text('Belge Üret'),
+            child: const Text('Belge İndir'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx),

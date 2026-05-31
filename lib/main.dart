@@ -1,11 +1,15 @@
+import 'dart:ui';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'core/app_error_reporter.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/butce_aktarim_provider.dart';
+import 'providers/butce_takip_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/dis_hekimligi_provider.dart';
 import 'providers/ek_odeme_provider.dart';
@@ -24,6 +28,25 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await AppErrorReporter.initialize();
+  FlutterError.onError = (details) {
+    AppErrorReporter.recordError(
+      details.exception,
+      details.stack ?? StackTrace.current,
+      reason: 'Flutter framework hatası',
+      fatal: true,
+    );
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppErrorReporter.recordError(
+      error,
+      stack,
+      reason: 'Platform dispatcher hatası',
+      fatal: true,
+    );
+    return true;
+  };
 
   runApp(const DSYSApp());
 }
@@ -47,6 +70,7 @@ class _DSYSAppState extends State<DSYSApp> {
   late final RaporlamaProvider _raporlamaProvider;
   late final EvrakArsivProvider _evrakArsivProvider;
   late final FaturaProvider _faturaProvider;
+  late final ButceTakipProvider _butceTakipProvider;
   late final GoRouter _router;
 
   @override
@@ -63,11 +87,13 @@ class _DSYSAppState extends State<DSYSApp> {
     _raporlamaProvider = RaporlamaProvider();
     _evrakArsivProvider = EvrakArsivProvider();
     _faturaProvider = FaturaProvider();
+    _butceTakipProvider = ButceTakipProvider();
     _router = AppRouter.router(_authProvider);
   }
 
   @override
   void dispose() {
+    _butceTakipProvider.dispose();
     _faturaProvider.dispose();
     _evrakArsivProvider.dispose();
     _raporlamaProvider.dispose();
@@ -98,6 +124,7 @@ class _DSYSAppState extends State<DSYSApp> {
         ChangeNotifierProvider.value(value: _raporlamaProvider),
         ChangeNotifierProvider.value(value: _evrakArsivProvider),
         ChangeNotifierProvider.value(value: _faturaProvider),
+        ChangeNotifierProvider.value(value: _butceTakipProvider),
       ],
       child: MaterialApp.router(
         title: 'DSYS - Döner Sermaye Yönetim Sistemi',
@@ -110,4 +137,3 @@ class _DSYSAppState extends State<DSYSApp> {
     );
   }
 }
-

@@ -36,6 +36,41 @@ jobs:
       - name: Run tests
         run: flutter test --coverage
 
+      - name: Enforce coverage threshold
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          coverage_file = Path("coverage/lcov.info")
+          if not coverage_file.exists():
+              raise SystemExit("coverage/lcov.info bulunamadı")
+
+          include_prefixes = ("lib/core/", "lib/models/", "lib/providers/", "lib/services/")
+          total_found = 0
+          total_hit = 0
+          current_file = None
+
+          for raw_line in coverage_file.read_text().splitlines():
+              line = raw_line.strip()
+              if line.startswith("SF:"):
+                  normalized = line[3:].replace("\\\\", "/")
+                  marker = "/lib/"
+                  current_file = normalized.split(marker, 1)[1] if marker in normalized else normalized
+              elif line.startswith("DA:") and current_file and current_file.startswith(include_prefixes):
+                  _, data = line.split(":", 1)
+                  _, hits = data.split(",", 1)
+                  total_found += 1
+                  total_hit += int(hits) > 0
+
+          if total_found == 0:
+              raise SystemExit("Coverage ölçümü için uygun dosya bulunamadı")
+
+          coverage = (total_hit / total_found) * 100
+          print(f'Filtered coverage: {coverage:.2f}%')
+          if coverage < 60:
+              raise SystemExit(f'Coverage threshold failed: {coverage:.2f}% < 60%')
+          PY
+
       - name: Upload coverage
         if: success()
         uses: actions/upload-artifact@v4

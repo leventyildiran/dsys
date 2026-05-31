@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/paginated_result.dart';
 import '../models/fatura_model.dart';
 import 'firestore_service.dart';
 
@@ -23,6 +25,31 @@ class FaturaService {
     } catch (e) {
       debugPrint('[FaturaService.getAll] Hata: $e');
       return [];
+    }
+
+    Future<PaginatedResult<FaturaModel,
+        QueryDocumentSnapshot<Map<String, dynamic>>>> getPage({
+      int limit = 20,
+      QueryDocumentSnapshot<Map<String, dynamic>>? startAfterDocument,
+    }) async {
+      try {
+        final page = await _service.getPage(
+          _collection,
+          limit: limit,
+          startAfterDocument: startAfterDocument,
+          queryBuilder: (ref) => ref.orderBy('olusturmaTarihi', descending: true),
+        );
+        return PaginatedResult(
+          items: page.docs
+              .map((doc) => FaturaModel.fromMap(doc.id, doc.data()))
+              .toList(),
+          hasMore: page.hasMore,
+          nextCursor: page.lastDocument,
+        );
+      } catch (e) {
+        debugPrint('[FaturaService.getPage] Hata: $e');
+        return const PaginatedResult(items: [], hasMore: false);
+      }
     }
   }
 

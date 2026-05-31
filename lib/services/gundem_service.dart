@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/paginated_result.dart';
 import '../models/gundem_model.dart';
 import 'firestore_service.dart';
 
@@ -23,6 +25,31 @@ class GundemService {
     } catch (e) {
       debugPrint('[GundemService.getAll] Hata: $e');
       return [];
+    }
+
+    Future<PaginatedResult<ToplantiModel,
+        QueryDocumentSnapshot<Map<String, dynamic>>>> getPage({
+      int limit = 20,
+      QueryDocumentSnapshot<Map<String, dynamic>>? startAfterDocument,
+    }) async {
+      try {
+        final page = await _service.getPage(
+          _collection,
+          limit: limit,
+          startAfterDocument: startAfterDocument,
+          queryBuilder: (ref) => ref.orderBy('olusturmaTarihi', descending: true),
+        );
+        return PaginatedResult(
+          items: page.docs
+              .map((doc) => ToplantiModel.fromMap(doc.id, doc.data()))
+              .toList(),
+          hasMore: page.hasMore,
+          nextCursor: page.lastDocument,
+        );
+      } catch (e) {
+        debugPrint('[GundemService.getPage] Hata: $e');
+        return const PaginatedResult(items: [], hasMore: false);
+      }
     }
   }
 

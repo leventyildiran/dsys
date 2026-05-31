@@ -1,5 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class FirestorePageResult {
+  const FirestorePageResult({
+    required this.docs,
+    required this.hasMore,
+    this.lastDocument,
+  });
+
+  final List<QueryDocumentSnapshot<Map<String, dynamic>>> docs;
+  final bool hasMore;
+  final QueryDocumentSnapshot<Map<String, dynamic>>? lastDocument;
+}
+
 /// Tüm Firestore servislerinin temel sınıfı.
 ///
 /// Generic CRUD işlemlerini sağlar. Multi-tenant yapıyı destekler.
@@ -75,6 +87,31 @@ class FirestoreService {
       return queryBuilder(ref).get() as Future<QuerySnapshot<Map<String, dynamic>>>;
     }
     return ref.get();
+  }
+
+  /// Koleksiyonu sayfalı şekilde getirir.
+  Future<FirestorePageResult> getPage(
+    String collectionPath, {
+    Query<Map<String, dynamic>> Function(CollectionReference<Map<String, dynamic>>)?
+        queryBuilder,
+    int limit = 20,
+    QueryDocumentSnapshot<Map<String, dynamic>>? startAfterDocument,
+  }) async {
+    final ref = collection(collectionPath);
+    Query<Map<String, dynamic>> query =
+        queryBuilder != null ? queryBuilder(ref) : ref;
+
+    if (startAfterDocument != null) {
+      query = query.startAfterDocument(startAfterDocument);
+    }
+
+    final snapshot = await query.limit(limit).get();
+    final docs = snapshot.docs;
+    return FirestorePageResult(
+      docs: docs,
+      hasMore: docs.length == limit,
+      lastDocument: docs.isEmpty ? startAfterDocument : docs.last,
+    );
   }
 
   /// Koleksiyonu gerçek zamanlı dinler.

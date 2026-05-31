@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/turkce_format.dart';
 import '../../models/fatura_model.dart';
 import '../../providers/fatura_provider.dart';
+import '../../services/pdf_service.dart';
 
 /// Otomatik Fatura Basım / PDF Önizleme ekranı.
 class FaturaScreen extends StatefulWidget {
@@ -20,6 +22,8 @@ class _FaturaScreenState extends State<FaturaScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _metinController = TextEditingController();
+  String _secilenBirimId = '';
+  String _secilenBirimAd = 'UBATAM';
 
   @override
   void initState() {
@@ -59,36 +63,53 @@ class _FaturaScreenState extends State<FaturaScreen>
                 ],
               ),
             ),
-      body: Column(
+      body: Row(
         children: [
-          if (widget.embedded) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Text('Fatura Basım',
-                  style: Theme.of(context).textTheme.headlineSmall),
-            ),
-            TabBar(
-              controller: _tabController,
-              tabs: [
-                Tab(
-                  text: 'Kuyruk (${provider.kuyrukSayisi})',
-                  icon: const Icon(Icons.queue),
-                ),
-                const Tab(text: 'Tümü', icon: Icon(Icons.list)),
-                const Tab(text: 'Toplu Yükle', icon: Icon(Icons.upload_file)),
-              ],
-            ),
-          ],
+          // Sol panel: Fatura listeleri
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
+            flex: provider.seciliFatura != null ? 1 : 2,
+            child: Column(
               children: [
-                _buildKuyrukTab(provider, theme),
-                _buildTumFaturalarTab(provider, theme),
-                _buildTopluYukleTab(provider, theme),
+                if (widget.embedded) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: Text('Fatura Basım',
+                        style: Theme.of(context).textTheme.headlineSmall),
+                  ),
+                  TabBar(
+                    controller: _tabController,
+                    tabs: [
+                      Tab(
+                        text: 'Kuyruk (${provider.kuyrukSayisi})',
+                        icon: const Icon(Icons.queue),
+                      ),
+                      const Tab(text: 'Tümü', icon: Icon(Icons.list)),
+                      const Tab(
+                          text: 'Toplu Yükle', icon: Icon(Icons.upload_file)),
+                    ],
+                  ),
+                ],
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildKuyrukTab(provider, theme),
+                      _buildTumFaturalarTab(provider, theme),
+                      _buildTopluYukleTab(provider, theme),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
+          // Sağ panel: PDF Önizleme
+          if (provider.seciliFatura != null) ...[
+            const VerticalDivider(width: 1),
+            Expanded(
+              flex: 1,
+              child: _buildPdfOnizlemePanel(provider, theme),
+            ),
+          ],
         ],
       ),
     );
@@ -97,6 +118,14 @@ class _FaturaScreenState extends State<FaturaScreen>
   /// Fatura kuyruğu — bekleyen faturaları sırasıyla işler.
   Widget _buildKuyrukTab(FaturaProvider provider, ThemeData theme) {
     if (provider.kuyruk.isEmpty) {
+      if (provider.hasMore) {
+        return Center(
+          child: _buildPaginationFooter(
+            onPressed: provider.dahaFazlaYukle,
+            isLoading: provider.isLoadingMore,
+          ),
+        );
+      }
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -111,8 +140,14 @@ class _FaturaScreenState extends State<FaturaScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: provider.kuyruk.length,
+      itemCount: provider.kuyruk.length + (provider.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= provider.kuyruk.length) {
+          return _buildPaginationFooter(
+            onPressed: provider.dahaFazlaYukle,
+            isLoading: provider.isLoadingMore,
+          );
+        }
         final fatura = provider.kuyruk[index];
         return _buildFaturaKart(fatura, provider, theme, isKuyruk: true);
       },
@@ -136,11 +171,37 @@ class _FaturaScreenState extends State<FaturaScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: provider.faturalar.length,
+      itemCount: provider.faturalar.length + (provider.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= provider.faturalar.length) {
+          return _buildPaginationFooter(
+            onPressed: provider.dahaFazlaYukle,
+            isLoading: provider.isLoadingMore,
+          );
+        }
         final fatura = provider.faturalar[index];
         return _buildFaturaKart(fatura, provider, theme);
       },
+    );
+  }
+
+  Widget _buildPaginationFooter({
+    required Future<void> Function() onPressed,
+    required bool isLoading,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      child: Center(
+        child: isLoading
+            ? const CircularProgressIndicator()
+            : OutlinedButton.icon(
+                onPressed: () {
+                  onPressed();
+                },
+                icon: const Icon(Icons.expand_more),
+                label: const Text('20 kayıt daha yükle'),
+              ),
+      ),
     );
   }
 
@@ -160,6 +221,32 @@ class _FaturaScreenState extends State<FaturaScreen>
             'Birimlerden gelen fatura taleplerini yapıştırın. '
             'Sistem metni otomatik olarak ayrıştıracaktır.',
             style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          // Birim seçimi
+          DropdownButtonFormField<String>(
+            value: _secilenBirimAd,
+            decoration: InputDecoration(
+              labelText: 'Birim',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            items: const [
+              DropdownMenuItem(value: 'UBATAM', child: Text('UBATAM')),
+              DropdownMenuItem(value: 'TUDAM', child: Text('TUDAM')),
+              DropdownMenuItem(
+                  value: 'Diş Hekimliği', child: Text('Diş Hekimliği')),
+              DropdownMenuItem(
+                  value: 'Mühendislik', child: Text('Mühendislik')),
+              DropdownMenuItem(value: 'Tıp Fakültesi', child: Text('Tıp Fakültesi')),
+            ],
+            onChanged: (value) {
+              setState(() {
+                _secilenBirimAd = value ?? 'UBATAM';
+                _secilenBirimId = value?.toLowerCase().replaceAll(' ', '_') ?? '';
+              });
+            },
           ),
           const SizedBox(height: 16),
           TextField(
@@ -191,8 +278,8 @@ class _FaturaScreenState extends State<FaturaScreen>
                   child: FilledButton.tonalIcon(
                     onPressed: () {
                       provider.topluFaturaOlustur(
-                        birimId: '',
-                        birimAd: 'UBATAM',
+                        birimId: _secilenBirimId,
+                        birimAd: _secilenBirimAd,
                       );
                       _metinController.clear();
                     },
@@ -234,8 +321,10 @@ class _FaturaScreenState extends State<FaturaScreen>
     ThemeData theme, {
     bool isKuyruk = false,
   }) {
+    final isSecili = provider.seciliFatura?.id == fatura.id;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      color: isSecili ? theme.colorScheme.primaryContainer : null,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -286,15 +375,25 @@ class _FaturaScreenState extends State<FaturaScreen>
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   OutlinedButton.icon(
-                    onPressed: () =>
-                        provider.faturaSecme(fatura),
+                    onPressed: () => provider.faturaSecme(fatura),
                     icon: const Icon(Icons.preview, size: 16),
                     label: const Text('Önizle'),
                   ),
                   const SizedBox(width: 8),
                   FilledButton.icon(
-                    onPressed: () =>
-                        provider.basildiIsaretle(fatura.id),
+                    onPressed: () async {
+                      final pdfBytes =
+                          await PdfService.matbuFaturaUret(fatura);
+                      if (!context.mounted) return;
+                      final printer =
+                          await Printing.pickPrinter(context: context);
+                      if (printer == null) return;
+                      await Printing.directPrintPdf(
+                        printer: printer,
+                        onLayout: (_) async => pdfBytes,
+                      );
+                      provider.basildiIsaretle(fatura.id);
+                    },
                     icon: const Icon(Icons.print, size: 16),
                     label: const Text('Yazdır'),
                   ),
@@ -304,6 +403,60 @@ class _FaturaScreenState extends State<FaturaScreen>
           ],
         ),
       ),
+    );
+  }
+
+  /// PDF Önizleme paneli — seçili faturanın gerçek PDF çıktısını gösterir.
+  Widget _buildPdfOnizlemePanel(FaturaProvider provider, ThemeData theme) {
+    final fatura = provider.seciliFatura!;
+    return Column(
+      children: [
+        // Önizleme başlık çubuğu
+        Container(
+          padding: const EdgeInsets.all(12),
+          color: theme.colorScheme.surfaceContainerHighest,
+          child: Row(
+            children: [
+              const Icon(Icons.picture_as_pdf, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'PDF Önizleme: ${fatura.firmaUnvan}',
+                  style: theme.textTheme.titleSmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.print, size: 20),
+                onPressed: () async {
+                  final pdfBytes = await PdfService.matbuFaturaUret(fatura);
+                  if (!context.mounted) return;
+                  await Printing.layoutPdf(
+                    onLayout: (_) async => pdfBytes,
+                  );
+                },
+                tooltip: 'Yazdır',
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => provider.faturaSecme(fatura), // Toggle off
+                tooltip: 'Kapat',
+              ),
+            ],
+          ),
+        ),
+        // Gerçek PDF önizleme
+        Expanded(
+          child: PdfPreview(
+            build: (_) => PdfService.matbuFaturaUret(fatura),
+            canChangeOrientation: false,
+            canChangePageFormat: false,
+            canDebug: false,
+            allowPrinting: true,
+            allowSharing: false,
+          ),
+        ),
+      ],
     );
   }
 }

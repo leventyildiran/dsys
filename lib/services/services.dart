@@ -1,5 +1,6 @@
 export 'belge_uretim_servisi.dart';
 export 'butce_aktarim_service.dart';
+export 'butce_takip_service.dart';
 export 'dagitim_service.dart';
 export 'data_service.dart';
 export 'dis_hekimligi_service.dart';

@@ -37,6 +37,9 @@ lib/
 # Bağımlılıkları yükle
 flutter pub get
 
+# Gemini OCR ile çalıştır
+flutter run -d chrome --dart-define=GEMINI_API_KEY=your-key
+
 # Web'de çalıştır
 flutter run -d chrome
 
@@ -56,7 +59,7 @@ Detaylı backlog ve faz takibi için → [BACKLOG.md](BACKLOG.md)
 | Faz 1: Firebase + Auth + Temel CRUD | ✅ Tamamlandı |
 | Faz 2: Tüm Modüller (M1–M8) | ✅ Tamamlandı |
 | Faz 3: Multi-tenant, PDF/DOCX, CI/CD, Testler | ✅ Tamamlandı |
-| Faz 4: Güvenlik hijyeni, kalite kapıları, performans | 🔄 Devam Ediyor |
+| Faz 4: Güvenlik hijyeni, kalite kapıları, performans | ✅ Tamamlandı |
 
 ## 🔐 Erişim
 
@@ -70,3 +73,6 @@ Detaylı backlog ve faz takibi için → [BACKLOG.md](BACKLOG.md)
 - [implementation_plan.md](implementation_plan.md) — Tam kapsamlı uygulama planı
 - [BACKLOG.md](BACKLOG.md) — Canlı geliştirme takip listesi
 - [SECURITY.md](SECURITY.md) — Güvenlik politikası ve kimlik bilgisi yönetimi
+- [MODULE_ACCEPTANCE.md](MODULE_ACCEPTANCE.md) — Modül bazlı done checklist
+- [OPERATIONS.md](OPERATIONS.md) — Loglama, hata izleme ve rollback prosedürü
+- [RELEASE.md](RELEASE.md) — Web/mobil paketleme ve dağıtım adımları

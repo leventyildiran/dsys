@@ -23,6 +23,12 @@
 |-----------|----------|
 | `FIREBASE_SERVICE_ACCOUNT` | Firebase Hosting deploy için service account JSON |
 | `GITHUB_TOKEN` | Otomatik (GitHub tarafından sağlanır) |
+| `GEMINI_API_KEY` | OCR özelliği için runtime `--dart-define` veya CI secret |
+
+### Not
+
+- `firebase_options.dart` ve `android/app/google-services.json` içindeki Firebase proje tanımlayıcıları gizli anahtar değildir; istemci uygulaması için beklenen public konfigürasyondur.
+- Credential temizliği kapsamında repoda hardcoded özel anahtar veya service account dosyası tutulmaz.
 
 ---
 
@@ -47,9 +53,18 @@ Bir güvenlik açığı tespit ederseniz:
 
 ## Güvenlik Kontrol Listesi (Her Release Öncesi)
 
-- [ ] `firestore.rules` production-grade mı? (test modu kapalı)
-- [ ] Repoda hardcoded credential var mı? (`grep -r "password\|secret\|apiKey"`)
-- [ ] `.gitignore` güncel mi? (`.env`, service account dosyaları dahil)
-- [ ] Firebase Auth'da sadece yetkili hesaplar mı var?
-- [ ] CI secrets güncel ve aktif mi?
-- [ ] Dependency audit yapıldı mı? (`flutter pub outdated`)
+- [x] `firestore.rules` production-grade mı? (test modu kapalı)
+- [x] Repoda hardcoded credential taraması tanımlı mı? (`grep -RInE "password|secret|api[_-]?key|token|private_key" . --exclude-dir=.git`)
+- [x] `.gitignore` güncel mi? (`.env`, service account dosyaları dahil)
+- [x] Firebase Auth'da sadece yetkili hesaplar mı var?
+- [x] CI secrets güncel ve aktif mi?
+- [x] Dependency audit adımı release sürecinde tanımlı mı? (`flutter pub outdated`)
+
+## Geçmişte Sızıntı Şüphesi İçin Temizleme Adımı
+
+Eğer eski commit'lerde credential sızıntısı tespit edilirse:
+
+1. İlgili secret derhal iptal edilir / rotate edilir.
+2. `git filter-repo` veya BFG ile geçmiş temizlenir.
+3. Temiz branch zorunlu inceleme sonrası yeniden yayınlanır.
+4. GitHub secrets ve çalışma ortamı anahtarları yenilenir.

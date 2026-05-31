@@ -1,11 +1,13 @@
 export 'aylik_hakedis_model.dart';
 export 'birim_model.dart';
 export 'butce_aktarim_model.dart';
+export 'butce_limit_model.dart';
 export 'dagitim_model.dart';
 export 'danismanlik_model.dart';
 export 'dis_hekimligi_model.dart';
 export 'ek_odeme_model.dart';
 export 'evrak_arsiv_model.dart';
+export 'evrak_ocr_sonucu.dart';
 export 'faaliyet_tanim_model.dart';
 export 'fatura_model.dart';
 export 'firma_model.dart';
