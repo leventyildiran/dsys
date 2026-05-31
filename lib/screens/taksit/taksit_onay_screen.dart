@@ -315,8 +315,6 @@ class _TaksitOnayScreenState extends State<TaksitOnayScreen> {
     TaksitModel taksit,
     TaksitProvider provider,
   ) async {
-    // Dağıtım verilerini yükleyip belge üretimi tetikle
-    // Bu kısım DagitimService'ten veriyi çekecek
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Karar belgesi oluşturuluyor...'),
@@ -324,9 +322,28 @@ class _TaksitOnayScreenState extends State<TaksitOnayScreen> {
       ),
     );
 
-    // TODO: DagitimService'ten dagitimlar çekilecek ve belge üretilecek
-    // final dagitimlar = await DagitimService().getAll(danismanlikId, taksitId);
-    // final belge = await provider.kararBelgesiUret(taksit, dagitimlar);
+    final dagitimlar = await provider.sonDagitimSonucu?.dagitimlar ?? [];
+    if (dagitimlar.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Dağıtım verisi bulunamadı. Önce taksiti onaylayın.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final belge = await provider.kararBelgesiUret(taksit, dagitimlar);
+    if (!mounted) return;
+    if (belge != null && belge.uretimHazir) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Karar belgesi başarıyla üretildi.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   Widget _buildDurumChip(TaksitDurum durum, ThemeData theme) {
