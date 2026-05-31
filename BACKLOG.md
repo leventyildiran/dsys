@@ -54,7 +54,7 @@
 
 | # | Öğe | Durum |
 |---|-----|-------|
-| — | Şu an devam eden aktif görev bulunmamaktadır. | — |
+| 1 | Güvenlik hijyeni — credential temizliği ve SECURITY.md oluşturulması | 🔄 Aktif |
 
 ---
 
@@ -62,7 +62,14 @@
 
 | # | Öğe | Modül | Öncelik |
 |---|-----|-------|---------|
-| — | Tüm temel modüller tamamlandı. İyileştirme ve detaylandırma aşamasına geçilecek. | — | — |
+| 1 | Güvenlik hijyeni — credential temizliği, SECURITY.md politikası | Altyapı | 🔴 Acil |
+| 2 | Test kapsamı güçlendirme — provider/service testleri, coverage ≥60% hedefi | Kalite | 🟠 Yüksek |
+| 3 | CI'ya coverage eşiği ekleme (lcov raporunda %60 altı → fail) | CI/CD | 🟠 Yüksek |
+| 4 | Performans — Firestore listeleme pagination (20 öğe/sayfa) | Altyapı | 🟡 Orta |
+| 5 | Operasyon paketi — loglama, hata izleme (Crashlytics), rollback prosedürü | DevOps | 🟡 Orta |
+| 6 | Modül kabul kriterleri — her ekran/servis için "done" kontrol listesi | Dokümantasyon | 🟡 Orta |
+| 7 | Mobil (Android/iOS) paketleme ve dağıtım | Release | 🔵 Düşük |
+| 8 | OCR + Gemini AI entegrasyonu (M7 evrak okuma) | İnovasyon | 🔵 Düşük |
 
 ---
 
@@ -74,11 +81,8 @@
 | 2 | ~~Birim testleri (unit + widget)~~ | ✅ Tamamlandı (test/ dizini) |
 | 3 | ~~CI/CD pipeline (GitHub Actions → Firebase deploy)~~ | ✅ Tamamlandı (.github/workflows/ci.yml) |
 | 4 | ~~Çoklu üniversite desteği (multi-tenant dinamik)~~ | ✅ Tamamlandı (FirestoreService.activeUniversiteId) |
-| 5 | Mobil (Android/iOS) paketleme ve dağıtım | Web stabil olunca |
-| 6 | Performans optimizasyonu (pagination, lazy loading) | Veri hacmi artınca |
-| 7 | ~~Gerçek .docx ZIP arşivi üretimi (archive paketi entegrasyonu)~~ | ✅ Tamamlandı (archive paketi ile) |
-| 8 | OCR + Gemini AI entegrasyonu (M7 evrak okuma) | İleri fazda |
-| 9 | ~~Excel import/export (M4 personel listesi yükleme)~~ | ✅ Tamamlandı (excel paketi ile) |
+| 5 | ~~Gerçek .docx ZIP arşivi üretimi (archive paketi entegrasyonu)~~ | ✅ Tamamlandı (archive paketi ile) |
+| 6 | ~~Excel import/export (M4 personel listesi yükleme)~~ | ✅ Tamamlandı (excel paketi ile) |
 
 ---
 

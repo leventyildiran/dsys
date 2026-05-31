@@ -54,8 +54,9 @@ Detaylı backlog ve faz takibi için → [BACKLOG.md](BACKLOG.md)
 | Faz | Durum |
 |-----|-------|
 | Faz 1: Firebase + Auth + Temel CRUD | ✅ Tamamlandı |
-| Modül 1: Danışmanlık Taksit Akışı | 🔄 Devam Ediyor |
-| Modül 2–8: Bütçe, Ek Ödeme, Diş Hekimliği, Gündem, Raporlama, EBYS, Fatura | 📌 Sırada |
+| Faz 2: Tüm Modüller (M1–M8) | ✅ Tamamlandı |
+| Faz 3: Multi-tenant, PDF/DOCX, CI/CD, Testler | ✅ Tamamlandı |
+| Faz 4: Güvenlik hijyeni, kalite kapıları, performans | 🔄 Devam Ediyor |
 
 ## 🔐 Erişim
 
@@ -68,3 +69,4 @@ Detaylı backlog ve faz takibi için → [BACKLOG.md](BACKLOG.md)
 - [SKILL.md](SKILL.md) — Ajan yetenek dosyası (mimari kurallar, formüller, şablonlar)
 - [implementation_plan.md](implementation_plan.md) — Tam kapsamlı uygulama planı
 - [BACKLOG.md](BACKLOG.md) — Canlı geliştirme takip listesi
+- [SECURITY.md](SECURITY.md) — Güvenlik politikası ve kimlik bilgisi yönetimi
