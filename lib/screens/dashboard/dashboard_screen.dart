@@ -3,9 +3,22 @@ import 'package:provider/provider.dart';
 
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../providers/user_provider.dart';
+import '../ayarlar/sistem_ayarlari_screen.dart';
+import '../birim/birim_yonetim_screen.dart';
+import '../butce_aktarim/butce_aktarim_screen.dart';
 import '../danismanlik/danismanlik_form_screen.dart';
 import '../danismanlik/danismanlik_liste_screen.dart';
+import '../dis_hekimligi/dis_hekimligi_screen.dart';
+import '../ek_odeme/ek_odeme_screen.dart';
+import '../evrak_arsiv/evrak_arsiv_screen.dart';
+import '../fatura/fatura_screen.dart';
+import '../firma/firma_yonetim_screen.dart';
+import '../gundem/gundem_screen.dart';
+import '../kullanici/kullanici_yonetim_screen.dart';
+import '../personel/personel_yonetim_screen.dart';
+import '../raporlama/raporlama_screen.dart';
 
 /// Ana dashboard ekranı.
 ///
@@ -91,7 +104,43 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       ),
       const _NavItem(
         icon: Icons.receipt_long_rounded,
-        label: 'Taksit Formu',
+        label: 'Yeni Danışmanlık',
+      ),
+      const _NavItem(
+        icon: Icons.swap_horiz_rounded,
+        label: 'Bütçe Aktarım',
+      ),
+      const _NavItem(
+        icon: Icons.payments_rounded,
+        label: 'Ek Ödeme',
+      ),
+      const _NavItem(
+        icon: Icons.medical_services_rounded,
+        label: 'Diş Hekimliği',
+      ),
+      const _NavItem(
+        icon: Icons.event_note_rounded,
+        label: 'Gündem',
+      ),
+      const _NavItem(
+        icon: Icons.analytics_rounded,
+        label: 'Raporlama',
+      ),
+      const _NavItem(
+        icon: Icons.folder_rounded,
+        label: 'Evrak Arşiv',
+      ),
+      const _NavItem(
+        icon: Icons.print_rounded,
+        label: 'Fatura',
+      ),
+      const _NavItem(
+        icon: Icons.school_rounded,
+        label: 'Personel',
+      ),
+      const _NavItem(
+        icon: Icons.store_rounded,
+        label: 'Firmalar',
       ),
     ];
 
@@ -189,13 +238,32 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 2:
         return const DanismanlikFormScreen();
       case 3:
-        return const _PlaceholderPanel(title: 'Kullanıcı Yönetimi');
+        return const ButceAktarimScreen(embedded: true);
       case 4:
-        return const _PlaceholderPanel(title: 'Birim Yönetimi');
+        return const EkOdemeScreen(embedded: true);
       case 5:
-        return const _PlaceholderPanel(title: 'Sistem Ayarları');
+        return const DisHekimligiScreen(embedded: true);
+      case 6:
+        return const GundemScreen(embedded: true);
+      case 7:
+        return const RaporlamaScreen(embedded: true);
+      case 8:
+        return const EvrakArsivScreen(embedded: true);
+      case 9:
+        return const FaturaScreen(embedded: true);
+      case 10:
+        return const PersonelYonetimScreen();
+      case 11:
+        return const FirmaYonetimScreen();
+      case 12:
+        return const KullaniciYonetimScreen();
+      case 13:
+        return const BirimYonetimScreen();
+      case 14:
+        return const SistemAyarlariScreen();
       default:
-        return const _PlaceholderPanel(title: '');
+        assert(false, 'Geçersiz navigasyon index: $_selectedIndex');
+        return const SizedBox.shrink();
     }
   }
 }
@@ -241,31 +309,43 @@ class _OverviewPanel extends StatelessWidget {
   }
 
   Widget _buildQuickStats(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.5,
-          children: const [
-            _StatCard(
-              icon: Icons.handshake,
-              label: 'Aktif Danışmanlıklar',
-              value: '—',
-            ),
-            _StatCard(
-              icon: Icons.pending_actions,
-              label: 'Bekleyen Taksitler',
-              value: '—',
-            ),
-            _StatCard(
-              icon: Icons.check_circle,
-              label: 'Onaylanan Kararlar',
-              value: '—',
-            ),
-          ],
+    return Selector<DashboardProvider, (int, int, int, bool)>(
+      selector: (_, p) => (
+        p.aktifDanismanlikSayisi,
+        p.bekleyenDanismanlikSayisi,
+        p.tamamlananKararSayisi,
+        p.isLoading,
+      ),
+      builder: (context, data, _) {
+        final (aktif, bekleyen, onaylanan, isLoading) = data;
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+            return GridView.count(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.5,
+              children: [
+                _StatCard(
+                  icon: Icons.handshake,
+                  label: 'Aktif Danışmanlıklar',
+                  value: isLoading ? '...' : aktif.toString(),
+                ),
+                _StatCard(
+                  icon: Icons.pending_actions,
+                  label: 'Bekleyen Danışmanlıklar',
+                  value: isLoading ? '...' : bekleyen.toString(),
+                ),
+                _StatCard(
+                  icon: Icons.check_circle,
+                  label: 'Tamamlanan Kararlar',
+                  value: isLoading ? '...' : onaylanan.toString(),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -311,41 +391,6 @@ class _StatCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Placeholder panel (henüz geliştirilmemiş modüller için).
-class _PlaceholderPanel extends StatelessWidget {
-  const _PlaceholderPanel({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.construction_rounded,
-            size: 48,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Bu modül yakında aktif olacak.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ],
       ),
     );
   }

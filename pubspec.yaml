@@ -46,6 +46,19 @@ dependencies:
   google_fonts: ^6.2.1
   cupertino_icons: ^1.0.8
 
+  # Document Generation
+  archive: ^4.0.4
+  pdf: ^3.11.2
+  printing: ^5.13.4
+
+  # Excel Import/Export
+  excel: ^4.0.6
+
+  # File Operations
+  path_provider: ^2.1.5
+  file_saver: ^0.2.14
+  universal_html: ^2.2.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

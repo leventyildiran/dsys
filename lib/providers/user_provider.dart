@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/user_model.dart';
+import '../services/firestore_service.dart';
 import '../services/user_service.dart';
 import 'auth_provider.dart';
 
@@ -69,6 +70,12 @@ class UserProvider extends ChangeNotifier {
       _currentUser = await _userService.getUser(uid);
       if (_currentUser == null) {
         _errorMessage = 'Kullanıcı profili bulunamadı. Yönetici ile iletişime geçin.';
+      } else {
+        // Multi-tenant: kullanıcı profilinden üniversite ID'sini ayarla
+        final uniId = _currentUser!.universiteId;
+        if (uniId != null && uniId.isNotEmpty) {
+          FirestoreService.activeUniversiteId = uniId;
+        }
       }
     } catch (e) {
       _errorMessage = 'Profil yüklenirken hata oluştu.';

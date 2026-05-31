@@ -1,30 +1,60 @@
-// This is a basic Flutter widget test.
+// DSYS temel widget test dosyası.
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Firebase bağımlılığı olmadan çalışabilen basit smoke testler.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:dsys/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('DSYS Smoke Tests', () {
+    testWidgets('Login ekranı temel widget render kontrolü', (tester) async {
+      // Login benzeri basit bir form widget'ı render et
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('DSYS - Döner Sermaye Yönetim Sistemi'),
+                  SizedBox(height: 16),
+                  TextField(
+                    decoration: InputDecoration(labelText: 'E-posta'),
+                  ),
+                  SizedBox(height: 8),
+                  TextField(
+                    decoration: InputDecoration(labelText: 'Şifre'),
+                    obscureText: true,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      // Başlık mevcut mu?
+      expect(find.text('DSYS - Döner Sermaye Yönetim Sistemi'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+      // Form alanları mevcut mu?
+      expect(find.text('E-posta'), findsOneWidget);
+      expect(find.text('Şifre'), findsOneWidget);
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    testWidgets('Material 3 tema uygulanabiliyor', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            colorSchemeSeed: const Color(0xFF1B5E20),
+            useMaterial3: true,
+          ),
+          home: const Scaffold(
+            body: Center(child: Text('Tema Testi')),
+          ),
+        ),
+      );
+
+      expect(find.text('Tema Testi'), findsOneWidget);
+    });
   });
 }

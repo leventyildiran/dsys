@@ -1,0 +1,190 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────
+    // YARDIMCI FONKSİYONLAR
+    // ─────────────────────────────────────────────────────────────
+
+    /// Oturum açmış kullanıcı mı?
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    /// Kullanıcı profil dokümanını getirir.
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    /// Kullanıcı aktif mi?
+    function isActiveUser() {
+      return isAuthenticated() && getUserData().aktif == true;
+    }
+
+    /// Global yetki var mı? (super_admin veya yk_sekreteri)
+    function isGlobalUser() {
+      let role = getUserData().role;
+      return isActiveUser() && (role == 'super_admin' || role == 'yk_sekreteri');
+    }
+
+    /// Süper admin mi?
+    function isSuperAdmin() {
+      return isActiveUser() && getUserData().role == 'super_admin';
+    }
+
+    /// Kullanıcının belirli bir üniversiteye erişimi var mı?
+    function hasUniversityAccess(universiteId) {
+      let userData = getUserData();
+      return isActiveUser() && (
+        userData.role == 'super_admin' ||
+        userData.universiteId == universiteId
+      );
+    }
+
+    /// Kullanıcının belirli bir birime erişimi var mı?
+    function hasBirimAccess(birimId) {
+      let userData = getUserData();
+      return isActiveUser() && (
+        userData.role == 'super_admin' ||
+        userData.role == 'yk_sekreteri' ||
+        userData.birimId == birimId
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // USERS KOLEKSİYONU (Kök seviye)
+    // ─────────────────────────────────────────────────────────────
+
+    match /users/{userId} {
+      // Herkes kendi profilini okuyabilir
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || isGlobalUser()
+      );
+
+      // Sadece SuperAdmin kullanıcı oluşturabilir/güncelleyebilir
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (
+        request.auth.uid == userId &&
+        // Kullanıcı kendi rolünü değiştiremez
+        request.resource.data.role == resource.data.role
+      );
+      allow delete: if isSuperAdmin();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ÜNİVERSİTE KOLEKSİYONLARI (Multi-tenant)
+    // ─────────────────────────────────────────────────────────────
+
+    match /universiteler/{universiteId} {
+      // Üniversite dokümanı okuma
+      allow read: if hasUniversityAccess(universiteId);
+      allow write: if isSuperAdmin();
+
+      // ─── BİRİMLER ───
+      match /birimler/{birimId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow write: if isGlobalUser();
+      }
+
+      // ─── PERSONEL ───
+      match /personel/{personelId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow create, update: if isGlobalUser() || hasBirimAccess(resource.data.birimId);
+        allow delete: if isGlobalUser();
+      }
+
+      // ─── DANIŞMANLIKLAR ───
+      match /danismanliklar/{danismanlikId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow create, update: if isActiveUser() && hasUniversityAccess(universiteId);
+        allow delete: if isGlobalUser();
+
+        // Taksitler alt koleksiyonu
+        match /taksitler/{taksitId} {
+          allow read: if hasUniversityAccess(universiteId);
+          allow create, update: if isActiveUser() && hasUniversityAccess(universiteId);
+          allow delete: if isGlobalUser();
+
+          // Dağıtımlar alt koleksiyonu
+          match /dagitimlar/{dagitimId} {
+            allow read: if hasUniversityAccess(universiteId);
+            allow write: if isActiveUser() && hasUniversityAccess(universiteId);
+          }
+        }
+
+        // Görevli personel alt koleksiyonu
+        match /gorevliPersonel/{gorevliId} {
+          allow read: if hasUniversityAccess(universiteId);
+          allow write: if isActiveUser() && hasUniversityAccess(universiteId);
+        }
+      }
+
+      // ─── FİRMALAR ───
+      match /firmalar/{firmaId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow write: if isActiveUser() && hasUniversityAccess(universiteId);
+      }
+
+      // ─── SİSTEM AYARLARI ───
+      match /sistemAyarlari/{docId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow write: if isGlobalUser();
+      }
+
+      // ─── BÜTÇE AKTARIMLARI ───
+      match /butceAktarimlar/{aktarimId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow create, update: if isActiveUser() && hasUniversityAccess(universiteId);
+        allow delete: if isGlobalUser();
+      }
+
+      // ─── EK ÖDEMELER ───
+      match /ekOdemeler/{ekOdemeId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow create, update: if isActiveUser() && hasUniversityAccess(universiteId);
+        allow delete: if isGlobalUser();
+      }
+
+      // ─── DİŞ HEKİMLİĞİ DAĞITIMLARI ───
+      match /disHekimligiDagitimlari/{dagitimId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow create, update: if isActiveUser() && hasUniversityAccess(universiteId);
+        allow delete: if isGlobalUser();
+      }
+
+      // ─── TOPLANTILAR (GÜNDEM) ───
+      match /toplantilar/{toplantiId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow create, update: if isActiveUser() && hasUniversityAccess(universiteId);
+        allow delete: if isGlobalUser();
+      }
+
+      // ─── EVRAK ARŞİVİ ───
+      match /evraklar/{evrakId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow create, update: if isActiveUser() && hasUniversityAccess(universiteId);
+        allow delete: if isGlobalUser();
+      }
+
+      // ─── FATURALAR ───
+      match /faturalar/{faturaId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow create, update: if isActiveUser() && hasUniversityAccess(universiteId);
+        allow delete: if isGlobalUser();
+      }
+
+      // ─── PERSONEL HAKEDİŞ ───
+      match /personelHakedis/{hakedisId} {
+        allow read: if hasUniversityAccess(universiteId);
+        allow write: if isActiveUser() && hasUniversityAccess(universiteId);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // VARSAYILAN: TÜM DİĞER DOKÜMANLAR REDDEDİLİR
+    // ─────────────────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

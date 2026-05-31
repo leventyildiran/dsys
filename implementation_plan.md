@@ -476,7 +476,7 @@ Bu fazda, `E:\antivaty\dsys` dizinindeki yeni Flutter projesine Firebase bağlan
 
 ### Yapılan İşlemler:
 - **Firebase Auth & Firestore:** Proje, yeni oluşturulan `dsys-44b8e` Firebase projesine bağlanmıştır. Auth üzerinde E-posta/Şifre yöntemi aktifleştirilmiş, Firestore veritabanı test modunda kurulmuştur.
-- **Süper Admin Kaydı:** Giriş yapabilmek için `levent2853@gmail.com` adresine `Ln4267331_` şifresiyle `super_admin` yetkisi tanımlanmıştır.
+- **Süper Admin Kaydı:** İlk `super_admin` hesabı Firebase Console üzerinden oluşturulmuştur. Kimlik bilgileri **asla** kaynak kodda veya dokümanlarda saklanmamalıdır.
 - **Web Yayınlama:** Uygulama web için başarıyla derlenip **[https://dsys-44b8e.web.app](https://dsys-44b8e.web.app)** adresinde Firebase Hosting üzerinde canlıya alınmıştır.
 
 ### Tamamlanan Dosya Değişiklikleri:

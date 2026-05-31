@@ -1,17 +1,72 @@
-# dsys
+# 🏛️ DSYS — Döner Sermaye Yönetim Sistemi
 
-A new Flutter project.
+Uşak Üniversitesi Döner Sermaye İşletme Müdürlüğü için geliştirilen danışmanlık takip, hakediş hesaplama ve karar belgesi üretim sistemidir.
 
-## Getting Started
+## 🚀 Canlı
 
-This project is a starting point for a Flutter application.
+**Web:** [https://dsys-44b8e.web.app](https://dsys-44b8e.web.app)
 
-A few resources to get you started if this is your first Flutter project:
+## 🏗️ Teknoloji Yığını
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+| Katman | Teknoloji |
+|--------|-----------|
+| Frontend | Flutter (Web + Android + iOS) |
+| Backend | Firebase (Auth, Firestore, Hosting) |
+| State Management | Provider + Selector |
+| Routing | GoRouter (auth-aware redirect) |
+| Mimari | Clean Architecture (Presentation → Domain → Data) |
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 📁 Proje Yapısı
+
+```
+lib/
+├── core/              # Hesaplama motoru, karar metni servisi, Türkçe format
+├── models/            # Dart veri modelleri (Firestore ↔ App)
+├── providers/         # ChangeNotifier state yönetimi
+├── screens/           # UI ekranları (dashboard, login, modül ekranları)
+├── services/          # Firestore CRUD servisleri
+├── firebase_options.dart
+├── main.dart
+├── router.dart
+└── theme.dart
+```
+
+## 🛠️ Kurulum
+
+```bash
+# Bağımlılıkları yükle
+flutter pub get
+
+# Web'de çalıştır
+flutter run -d chrome
+
+# Analiz
+flutter analyze
+
+# Test
+flutter test
+```
+
+## 📋 Geliştirme Durumu
+
+Detaylı backlog ve faz takibi için → [BACKLOG.md](BACKLOG.md)
+
+| Faz | Durum |
+|-----|-------|
+| Faz 1: Firebase + Auth + Temel CRUD | ✅ Tamamlandı |
+| Faz 2: Tüm Modüller (M1–M8) | ✅ Tamamlandı |
+| Faz 3: Multi-tenant, PDF/DOCX, CI/CD, Testler | ✅ Tamamlandı |
+| Faz 4: Güvenlik hijyeni, kalite kapıları, performans | 🔄 Devam Ediyor |
+
+## 🔐 Erişim
+
+- Anonim/misafir girişi **yoktur**.
+- Sadece yetkilendirilmiş e-posta/şifre hesapları ile giriş yapılabilir.
+- Rol tabanlı erişim: `super_admin`, `admin`, `birim_yoneticisi`, `kullanici`
+
+## 📖 Dokümantasyon
+
+- [SKILL.md](SKILL.md) — Ajan yetenek dosyası (mimari kurallar, formüller, şablonlar)
+- [implementation_plan.md](implementation_plan.md) — Tam kapsamlı uygulama planı
+- [BACKLOG.md](BACKLOG.md) — Canlı geliştirme takip listesi
+- [SECURITY.md](SECURITY.md) — Güvenlik politikası ve kimlik bilgisi yönetimi
