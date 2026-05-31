@@ -5,6 +5,7 @@ import 'providers/auth_provider.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/taksit/taksit_onay_screen.dart';
 
 /// DSYS uygulama yönlendirici yapılandırması.
 ///
@@ -57,6 +58,13 @@ class AppRouter {
         GoRoute(
           path: '/dashboard',
           builder: (context, state) => const DashboardScreen(),
+        ),
+        GoRoute(
+          path: '/taksit-onay/:danismanlikId',
+          builder: (context, state) {
+            final danismanlikId = state.pathParameters['danismanlikId']!;
+            return TaksitOnayScreen(danismanlikId: danismanlikId);
+          },
         ),
       ],
     );
