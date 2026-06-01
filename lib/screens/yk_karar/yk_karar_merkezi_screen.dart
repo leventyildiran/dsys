@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../models/gundem_model.dart';
 import '../../models/yk_karar_model.dart';
 import '../../providers/gundem_provider.dart';
 import '../../providers/yk_karar_provider.dart';
+import '../../services/gundem_parser_service.dart';
 
 /// Yürütme Kurulu Karar Merkezi ekranı.
 class YkKararMerkeziScreen extends StatefulWidget {
@@ -23,6 +25,7 @@ class YkKararMerkeziScreen extends StatefulWidget {
 class _YkKararMerkeziScreenState extends State<YkKararMerkeziScreen> {
   String? _seciliToplantiId;
   ToplantiModel? _seciliToplanti;
+  bool _isImporting = false;
 
   @override
   void initState() {
@@ -97,7 +100,7 @@ class _YkKararMerkeziScreenState extends State<YkKararMerkeziScreen> {
                           ),
                           const DropdownMenuItem<String?>(
                             value: '',
-                            child: Text('Toplantı Atanmamış (Gündem Dışı) Kararlar'),
+                            child: Text('Karar Havuzu (Atanmamış / Gündem Dışı)'),
                           ),
                           ...toplantilar.map((t) => DropdownMenuItem<String?>(
                                 value: t.id,
@@ -118,6 +121,18 @@ class _YkKararMerkeziScreenState extends State<YkKararMerkeziScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  if (_isImporting)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  else
+                    FilledButton.icon(
+                      onPressed: () => _pdfGundemIceriAktar(context, ykProvider),
+                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                      label: const Text('PDF İçe Aktar'),
+                    ),
                 ],
               ),
             ),
@@ -466,6 +481,53 @@ class _YkKararMerkeziScreenState extends State<YkKararMerkeziScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Bu toplantıya ait onaylanmış karar bulunmamaktadır.')),
         );
+      }
+    }
+  }
+
+  Future<void> _pdfGundemIceriAktar(BuildContext context, YkKararProvider provider) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) return;
+    
+    final bytes = result.files.first.bytes;
+    if (bytes == null) return;
+
+    setState(() => _isImporting = true);
+
+    try {
+      final parser = GundemParserService();
+      final eklenenIdler = await parser.pdfGundemIceriAktar(bytes);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${eklenenIdler.length} adet gündem maddesi havuza eklendi.')),
+        );
+      }
+      
+      // Havuzu yenile
+      provider.kararlariYukle();
+      
+      // Dropdown'da Karar Havuzunu seçili hale getir
+      setState(() {
+        _seciliToplantiId = '';
+        _seciliToplanti = null;
+      });
+      provider.toplantiSec('');
+      
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('İçe aktarma hatası: \$e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isImporting = false);
       }
     }
   }
