@@ -18,6 +18,7 @@ import '../../providers/user_provider.dart';
 import '../../services/data_service.dart';
 import '../../services/gundem_parser_service.dart';
 import '../../services/pdf_service.dart';
+import '../../services/belge_uretim_servisi.dart';
 
 /// Yürütme Kurulu Karar Merkezi ekranı.
 class YkKararMerkeziScreen extends StatefulWidget {
@@ -89,6 +90,11 @@ class _YkKararMerkeziScreenState extends State<YkKararMerkeziScreen> {
                     tooltip: 'PDF Önizle & Yazdır',
                   ),
                   IconButton(
+                    icon: const Icon(Icons.description_rounded),
+                    onPressed: () => _kararDefteriDocxIndir(context, ykProvider),
+                    tooltip: 'Word (DOCX) Olarak İndir',
+                  ),
+                  IconButton(
                     icon: const Icon(Icons.download_rounded),
                     onPressed: () => _kararDefteriIndir(context, ykProvider),
                     tooltip: 'Karar Defteri İndir',
@@ -117,6 +123,11 @@ class _YkKararMerkeziScreenState extends State<YkKararMerkeziScreen> {
                       icon: const Icon(Icons.picture_as_pdf_rounded),
                       onPressed: () => _pdfOnizlemeDialog(context, ykProvider),
                       tooltip: 'PDF Önizle & Yazdır',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.description_rounded),
+                      onPressed: () => _kararDefteriDocxIndir(context, ykProvider),
+                      tooltip: 'Word (DOCX) Olarak İndir',
                     ),
                     IconButton(
                       icon: const Icon(Icons.download_rounded),
@@ -580,6 +591,36 @@ class _YkKararMerkeziScreenState extends State<YkKararMerkeziScreen> {
     }
   }
 
+  void _kararDefteriDocxIndir(BuildContext context, YkKararProvider provider) async {
+    if (_seciliToplanti == null) return;
+    final defter = await provider.kararDefteriMetniUret(
+      _seciliToplanti!.id,
+      _seciliToplanti!.toplantiNo,
+      _seciliToplanti!.toplantiTarihi,
+    );
+
+    if (defter != null) {
+      final bytes = BelgeUretimServisi.metindenDocxOlustur(defter);
+      await FileSaver.instance.saveFile(
+        name: 'karar_defteri_${_seciliToplanti!.toplantiNo.replaceAll('/', '_')}',
+        bytes: bytes,
+        ext: 'docx',
+        mimeType: MimeType.microsoftWord,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Karar Defteri Word (DOCX) olarak başarıyla indirildi.')),
+        );
+      }
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bu toplantıya ait onaylanmış karar bulunmamaktadır.')),
+        );
+      }
+    }
+  }
+
   Future<void> _pdfGundemIceriAktar(BuildContext context, YkKararProvider provider) async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
@@ -674,134 +715,118 @@ class _YkKararMerkeziScreenState extends State<YkKararMerkeziScreen> {
               Flexible(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
-                  child: Container(
-                    padding: const EdgeInsets.all(40),
-                    decoration: BoxDecoration(
-                      color: Colors.white, // clean paper color
-                      border: Border.all(color: Colors.grey.shade400),
-                      borderRadius: BorderRadius.circular(4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                  child: DefaultTextStyle(
+                    style: const TextStyle(
+                      fontFamily: 'Times New Roman',
+                      fontSize: 12,
+                      color: Colors.black,
+                      height: 1.4,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // University Header
-                        Center(
-                          child: Text(
-                            'T.C.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                    child: Container(
+                      padding: const EdgeInsets.all(40),
+                      decoration: BoxDecoration(
+                        color: Colors.white, // clean paper color
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // University Header
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'T.C.',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
-                        ),
-                        Center(
-                          child: Text(
-                            'UŞAK ÜNİVERSİTESİ',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              _ayarlar?.kurumAdiGuncel ?? 'UŞAK ÜNİVERSİTESİ',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
+                          const SizedBox(height: 12),
+                          Center(
+                            child: Text(
+                              _ayarlar?.antetBasligiGuncel ?? 'DÖNER SERMAYE YÜRÜTME KURULU KARARLARI',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
 
-                        // Double bordered box
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.black, width: 1),
-                          ),
-                          padding: const EdgeInsets.all(2), // outer border spacing
-                          child: Container(
+                          // Single-bordered table header block matching Word/PDF template (no divider)
+                          Container(
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.black, width: 1),
+                              border: Border.all(color: Colors.black, width: 0.8),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                            child: Column(
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'DÖNER SERMAYE YÜRÜTME KURULU KARARLARI',
-                                  textAlign: TextAlign.center,
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    fontSize: 13,
-                                  ),
+                                  'TOPLANTI SAYISI: ${karar.toplantiNo.isNotEmpty ? karar.toplantiNo : "-"}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                                const SizedBox(height: 6),
-                                const Divider(color: Colors.black, height: 1, thickness: 1),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'TOPLANTI SAYISI: ${karar.toplantiNo.isNotEmpty ? karar.toplantiNo : "-"}',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 11),
-                                    ),
-                                    Text(
-                                      'KARAR TARİHİ: ${karar.kararTarihi.isNotEmpty ? karar.kararTarihi : "-"}',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 11),
-                                    ),
-                                  ],
+                                Text(
+                                  'KARAR TARİHİ: ${karar.kararTarihi.isNotEmpty ? karar.kararTarihi : "-"}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 20),
 
-                        // Preamble / Giriş Metni
-                        Builder(
-                          builder: (context) {
-                            final kurulUyeleri = _ayarlar?.kurulUyeleriListesi ?? SistemAyarlariModel.varsayilanKurulUyeleri;
-                            final baskanUye = kurulUyeleri.firstWhere(
-                              (u) => u.gorev.toLowerCase().contains('başkan') || u.gorev.toLowerCase().contains('baskan'),
-                              orElse: () => kurulUyeleri.isNotEmpty
-                                  ? kurulUyeleri.first
-                                  : const KurulUyesiModel(siraNo: '1', gorev: 'Başkan', adSoyad: ''),
-                            );
-                            final baskanAdi = baskanUye.adSoyad;
+                          // Preamble / Giriş Metni
+                          Builder(
+                            builder: (context) {
+                              final kurulUyeleri = _ayarlar?.kurulUyeleriListesi ?? SistemAyarlariModel.varsayilanKurulUyeleri;
+                              final baskanUye = kurulUyeleri.firstWhere(
+                                (u) => u.gorev.toLowerCase().contains('başkan') || u.gorev.toLowerCase().contains('baskan'),
+                                orElse: () => kurulUyeleri.isNotEmpty
+                                    ? kurulUyeleri.first
+                                    : const KurulUyesiModel(siraNo: '1', gorev: 'Başkan', adSoyad: ''),
+                              );
+                              final baskanAdi = baskanUye.adSoyad;
 
-                            return Text(
-                              "Uşak Üniversitesi Döner Sermaye Yürütme Kurulu, $baskanAdi başkanlığında ${karar.kararTarihi.isNotEmpty ? karar.kararTarihi : "-"} tarihinde saat 14:00' te toplandı. Gündem maddeleri görüşülerek aşağıdaki kararlar alındı.",
-                              textAlign: TextAlign.justify,
-                              style: const TextStyle(color: Colors.black, fontSize: 13, height: 1.5),
-                            );
-                          }
-                        ),
-                        const SizedBox(height: 20),
+                              return Text(
+                                "      Uşak Üniversitesi Döner Sermaye Yürütme Kurulu Rektör Yardımcısı $baskanAdi başkanlığında ${karar.kararTarihi.isNotEmpty ? karar.kararTarihi : "-"} tarihinde saat 10:00' da toplandı. Gündem maddeleri görüşülerek aşağıdaki kararlar alındı.",
+                                textAlign: TextAlign.justify,
+                              );
+                            }
+                          ),
+                          const SizedBox(height: 20),
 
-                        // Decision Title
-                        Text(
-                          'KARAR ${karar.kararNo.isNotEmpty ? karar.kararNo : "Taslak"}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 13),
-                        ),
-                        const SizedBox(height: 8),
+                          // Decision Title
+                          Text(
+                            'KARAR ${karar.kararNo.isNotEmpty ? karar.kararNo : "Taslak"}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
 
-                        // Decision Text
-                        Text(
-                          karar.kararMetni,
-                          textAlign: TextAlign.justify,
-                          style: const TextStyle(color: Colors.black, fontSize: 13, height: 1.5),
-                        ),
-                        const SizedBox(height: 24),
+                          // Decision Text
+                          Text(
+                            "      ${karar.kararMetni}",
+                            textAlign: TextAlign.justify,
+                          ),
+                          const SizedBox(height: 24),
 
-                        // Oy birliği ifadesi
-                        Center(
-                          child: Text(
-                            'Katılanların oy birliği ile karar verildi.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
+                          // Oy birliği ifadesi
+                          const Center(
+                            child: Text(
+                              'Katılanların oy birliği ile karar verildi.',
+                              style: TextStyle(fontStyle: FontStyle.italic),
                             ),
                           ),
-                        ),
                         const SizedBox(height: 24),
 
                         // Signature Table
@@ -856,6 +881,7 @@ class _YkKararMerkeziScreenState extends State<YkKararMerkeziScreen> {
                   ),
                 ),
               ),
+            ),
               // Footer Actions
               Container(
                 padding: const EdgeInsets.all(16),

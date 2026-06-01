@@ -105,6 +105,10 @@ class YkKararProvider extends ChangeNotifier {
     String kararMetni, {
     String? birimId,
     String? birimAd,
+    String? kararNo,
+    String? kararTarihi,
+    YkKararTuru? tur,
+    YkKararDurum? durum,
   }) async {
     try {
       final updates = <String, dynamic>{
@@ -113,6 +117,10 @@ class YkKararProvider extends ChangeNotifier {
       };
       if (birimId != null) updates['birimId'] = birimId;
       if (birimAd != null) updates['birimAd'] = birimAd;
+      if (kararNo != null) updates['kararNo'] = kararNo;
+      if (kararTarihi != null) updates['kararTarihi'] = kararTarihi;
+      if (tur != null) updates['tur'] = tur.value;
+      if (durum != null) updates['durum'] = durum.value;
 
       await _service.update(id, updates);
       _basariMesaji = 'Karar başarıyla güncellendi.';

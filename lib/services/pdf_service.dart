@@ -306,16 +306,21 @@ class PdfService {
   static Future<Uint8List> ykKararDefteriPdfUret(
     ToplantiModel toplanti,
     List<YkKararModel> kararlar,
-    List<KurulUyesiModel> kurulUyeleri,
-  ) async {
+    List<KurulUyesiModel> kurulUyeleri, {
+    String? kurumAdi,
+    String? antetBasligi,
+  }) async {
     final pdf = pw.Document();
 
-    final regularFont = await PdfGoogleFonts.robotoRegular();
-    final boldFont = await PdfGoogleFonts.robotoBold();
+    final regularFont = await PdfGoogleFonts.tinosRegular();
+    final boldFont = await PdfGoogleFonts.tinosBold();
 
-    final textStyle = pw.TextStyle(font: regularFont, fontSize: 10, height: 1.4);
-    final boldStyle = pw.TextStyle(font: boldFont, fontSize: 10);
-    final titleStyle = pw.TextStyle(font: boldFont, fontSize: 12);
+    final textStyle = pw.TextStyle(font: regularFont, fontSize: 12, height: 1.4);
+    final boldStyle = pw.TextStyle(font: boldFont, fontSize: 12);
+    final titleStyle = pw.TextStyle(font: boldFont, fontSize: 14);
+
+    final titleKurum = (kurumAdi == null || kurumAdi.trim().isEmpty) ? 'UŞAK ÜNİVERSİTESİ' : kurumAdi.toUpperCase();
+    final titleAntet = (antetBasligi == null || antetBasligi.trim().isEmpty) ? 'DÖNER SERMAYE YÜRÜTME KURULU KARARLARI' : antetBasligi.toUpperCase();
 
     final baskanUye = kurulUyeleri.firstWhere(
       (u) => u.gorev.toLowerCase().contains('başkan') || u.gorev.toLowerCase().contains('baskan'),
@@ -332,57 +337,41 @@ class PdfService {
         build: (context) {
           return [
             // Resmi Başlık
-            pw.Center(
+            pw.Align(
+              alignment: pw.Alignment.centerLeft,
               child: pw.Text(
                 'T.C.',
                 style: boldStyle,
               ),
             ),
-            pw.Center(
+            pw.Align(
+              alignment: pw.Alignment.centerLeft,
               child: pw.Text(
-                'UŞAK ÜNİVERSİTESİ REKTÖRLÜĞÜ',
+                titleKurum,
                 style: boldStyle,
               ),
             ),
+            pw.SizedBox(height: 12),
             pw.Center(
               child: pw.Text(
-                'Döner Sermaye İşletme Müdürlüğü',
-                style: textStyle,
+                titleAntet,
+                style: titleStyle,
               ),
             ),
-            pw.SizedBox(height: 15),
+            pw.SizedBox(height: 12),
 
-            // Toplantı Bilgileri Kutusu (Double border)
+            // Toplantı Bilgileri Kutusu (Single border without divider)
             pw.Container(
               decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.black, width: 2),
+                border: pw.Border.all(color: PdfColors.black, width: 0.8),
               ),
-              padding: const pw.EdgeInsets.all(1), // Çift çizgi efekti için iç boşluk
-              child: pw.Container(
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.black, width: 0.8),
-                ),
-                padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                child: pw.Column(
-                  children: [
-                    pw.Center(
-                      child: pw.Text(
-                        'DÖNER SERMAYE YÜRÜTME KURULU KARARLARI',
-                        style: titleStyle,
-                      ),
-                    ),
-                    pw.SizedBox(height: 4),
-                    pw.Divider(thickness: 0.8, color: PdfColors.black),
-                    pw.SizedBox(height: 4),
-                    pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        pw.Text('TOPLANTI SAYISI: ${toplanti.toplantiNo}', style: boldStyle),
-                        pw.Text('KARAR TARİHİ: ${toplanti.toplantiTarihi}', style: boldStyle),
-                      ],
-                    ),
-                  ],
-                ),
+              padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('TOPLANTI SAYISI: ${toplanti.toplantiNo}', style: boldStyle),
+                  pw.Text('KARAR TARİHİ: ${toplanti.toplantiTarihi}', style: boldStyle),
+                ],
               ),
             ),
             pw.SizedBox(height: 15),
@@ -390,7 +379,7 @@ class PdfService {
             // Preamble / Giriş Metni
             pw.Paragraph(
               text:
-                  "Uşak Üniversitesi Döner Sermaye Yürütme Kurulu, $baskanAdi başkanlığında ${toplanti.toplantiTarihi} tarihinde saat 14:00' te toplandı. Gündem maddeleri görüşülerek aşağıdaki kararlar alındı.",
+                  "      Uşak Üniversitesi Döner Sermaye Yürütme Kurulu Rektör Yardımcısı $baskanAdi başkanlığında ${toplanti.toplantiTarihi} tarihinde saat 10:00' da toplandı. Gündem maddeleri görüşülerek aşağıdaki kararlar alındı.",
               style: textStyle,
               textAlign: pw.TextAlign.justify,
             ),
@@ -413,7 +402,7 @@ class PdfService {
                     ),
                     pw.SizedBox(height: 4),
                     pw.Paragraph(
-                      text: karar.kararMetni,
+                      text: '      ${karar.kararMetni}',
                       style: textStyle,
                       textAlign: pw.TextAlign.justify,
                     ),
@@ -514,12 +503,12 @@ class PdfService {
   static Future<Uint8List> ykGundemPdfUret(ToplantiModel toplanti) async {
     final pdf = pw.Document();
 
-    final regularFont = await PdfGoogleFonts.robotoRegular();
-    final boldFont = await PdfGoogleFonts.robotoBold();
+    final regularFont = await PdfGoogleFonts.tinosRegular();
+    final boldFont = await PdfGoogleFonts.tinosBold();
 
-    final textStyle = pw.TextStyle(font: regularFont, fontSize: 11, height: 1.5);
-    final boldStyle = pw.TextStyle(font: boldFont, fontSize: 11);
-    final titleStyle = pw.TextStyle(font: boldFont, fontSize: 13, decoration: pw.TextDecoration.underline);
+    final textStyle = pw.TextStyle(font: regularFont, fontSize: 12, height: 1.5);
+    final boldStyle = pw.TextStyle(font: boldFont, fontSize: 12);
+    final titleStyle = pw.TextStyle(font: boldFont, fontSize: 14, decoration: pw.TextDecoration.underline);
 
     pdf.addPage(
       pw.Page(

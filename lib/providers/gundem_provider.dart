@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/gundem_model.dart';
 import '../services/gundem_service.dart';
@@ -123,6 +124,32 @@ class GundemProvider extends ChangeNotifier {
     }
   }
 
+  /// Gündem maddesini siler.
+  Future<bool> gundemMaddesiSil(String toplantiId, int index) async {
+    if (_seciliToplanti == null) return false;
+
+    try {
+      final mevcutMaddeler =
+          List<GundemMaddesi>.from(_seciliToplanti!.gundemMaddeleri);
+      mevcutMaddeler.removeAt(index);
+      
+      // Sıra numaralarını yeniden düzenle
+      final guncellenmis = mevcutMaddeler.asMap().entries.map((entry) {
+        return entry.value.copyWith(siraNo: entry.key + 1);
+      }).toList();
+
+      await _service.gundemGuncelle(toplantiId, guncellenmis);
+      await toplantiYukle(toplantiId);
+      _basariMesaji = 'Gündem maddesi silindi.';
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _hataMesaji = 'Gündem maddesi silinemedi: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Gündem maddesi sırasını değiştirir (sürükle-bırak).
   Future<void> siraDegistir(
       String toplantiId, int eskiIndex, int yeniIndex) async {
@@ -157,6 +184,76 @@ class GundemProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _hataMesaji = 'Silinemedi: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Toplantıya PDF ekler (Firebase Storage'a yükler ve Firestore'u günceller)
+  Future<bool> toplantiPdfYukle(String toplantiId, String dosyaAdi, Uint8List dosyaBytes) async {
+    if (_seciliToplanti == null) return false;
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final ref = FirebaseStorage.instance.ref('toplantilar/$toplantiId/$dosyaAdi');
+      final metadata = SettableMetadata(contentType: 'application/pdf');
+      await ref.putData(dosyaBytes, metadata);
+      final downloadUrl = await ref.getDownloadURL();
+      
+      final guncelPdfUrls = List<String>.from(_seciliToplanti!.pdfUrls);
+      guncelPdfUrls.add(downloadUrl);
+      
+      await _service.update(toplantiId, {'pdfUrls': guncelPdfUrls});
+      await toplantiYukle(toplantiId);
+      _basariMesaji = 'PDF başarıyla yüklendi.';
+      return true;
+    } catch (e) {
+      _hataMesaji = 'PDF yükleme hatası: $e';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Toplantıdan PDF siler
+  Future<bool> toplantiPdfSil(String toplantiId, String downloadUrl) async {
+    if (_seciliToplanti == null) return false;
+    _isLoading = true;
+    notifyListeners();
+    try {
+      try {
+        final ref = FirebaseStorage.instance.refFromURL(downloadUrl);
+        await ref.delete();
+      } catch (e) {
+        debugPrint('Storage file delete warning: $e');
+      }
+
+      final guncelPdfUrls = List<String>.from(_seciliToplanti!.pdfUrls);
+      guncelPdfUrls.remove(downloadUrl);
+      
+      await _service.update(toplantiId, {'pdfUrls': guncelPdfUrls});
+      await toplantiYukle(toplantiId);
+      _basariMesaji = 'PDF başarıyla silindi.';
+      return true;
+    } catch (e) {
+      _hataMesaji = 'PDF silme hatası: $e';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Gündem listesini topluca günceller
+  Future<bool> gundemMaddeleriGuncelle(String toplantiId, List<GundemMaddesi> maddeler) async {
+    try {
+      await _service.gundemGuncelle(toplantiId, maddeler);
+      await toplantiYukle(toplantiId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _hataMesaji = 'Gündem güncellenemedi: $e';
       notifyListeners();
       return false;
     }

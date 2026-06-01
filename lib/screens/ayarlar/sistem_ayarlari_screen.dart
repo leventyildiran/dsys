@@ -34,6 +34,8 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
   final _aiApiUrlController = TextEditingController();
   final _aiApiKeyController = TextEditingController();
   final _aiModelController = TextEditingController();
+  final _kurumAdiController = TextEditingController();
+  final _antetBasligiController = TextEditingController();
 
   // Ünvan katsayıları
   final Map<String, TextEditingController> _unvanControllers = {};
@@ -64,6 +66,8 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
     _aiApiUrlController.dispose();
     _aiApiKeyController.dispose();
     _aiModelController.dispose();
+    _kurumAdiController.dispose();
+    _antetBasligiController.dispose();
     for (final c in _unvanControllers.values) {
       c.dispose();
     }
@@ -90,6 +94,8 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
         _aiApiUrlController.text = ayarlar.aiApiUrl ?? '';
         _aiApiKeyController.text = ayarlar.aiApiKey ?? '';
         _aiModelController.text = ayarlar.aiModel ?? '';
+        _kurumAdiController.text = ayarlar.kurumAdi ?? 'UŞAK ÜNİVERSİTESİ';
+        _antetBasligiController.text = ayarlar.antetBasligi ?? 'DÖNER SERMAYE YÜRÜTME KURULU KARARLARI';
 
         for (final entry in _varsayilanUnvanlar.entries) {
           final value = ayarlar.unvanKatsayilari[entry.key] ?? 1.0;
@@ -104,6 +110,8 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
         _bapController.text = '5';
         _aracGerecController.text = '45';
         _dagitilabilirController.text = '49';
+        _kurumAdiController.text = 'UŞAK ÜNİVERSİTESİ';
+        _antetBasligiController.text = 'DÖNER SERMAYE YÜRÜTME KURULU KARARLARI';
 
         for (final entry in _varsayilanUnvanlar.entries) {
           _unvanControllers[entry.key] =
@@ -148,6 +156,8 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
         aiApiKey: _aiApiKeyController.text.trim().isEmpty ? null : _aiApiKeyController.text.trim(),
         aiModel: _aiModelController.text.trim().isEmpty ? null : _aiModelController.text.trim(),
         kurulUyeleri: _ayarlar?.kurulUyeleri,
+        kurumAdi: _kurumAdiController.text.trim().isEmpty ? null : _kurumAdiController.text.trim(),
+        antetBasligi: _antetBasligiController.text.trim().isEmpty ? null : _antetBasligiController.text.trim(),
       );
 
       await _service.update(model.toMap());
@@ -300,6 +310,35 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: DSYSTheme.spacingL),
+
+                // Kurum ve Antet Şablon Ayarları
+                _buildSectionCard(
+                  context,
+                  title: 'Kurum ve Antet Şablon Ayarları (Karar Başlığı)',
+                  icon: Icons.title_rounded,
+                  children: [
+                    TextFormField(
+                      controller: _kurumAdiController,
+                      decoration: const InputDecoration(
+                        labelText: 'Kurum / Üniversite Adı',
+                        hintText: 'UŞAK ÜNİVERSİTESİ',
+                        helperText: 'Belge antetinde yer alacak kurum adı.',
+                      ),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Zorunlu alan' : null,
+                    ),
+                    const SizedBox(height: DSYSTheme.spacingM),
+                    TextFormField(
+                      controller: _antetBasligiController,
+                      decoration: const InputDecoration(
+                        labelText: 'Karar / Antet Başlığı',
+                        hintText: 'DÖNER SERMAYE YÜRÜTME KURULU KARARLARI',
+                        helperText: 'Karar belgesinin ana başlığı.',
+                      ),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Zorunlu alan' : null,
                     ),
                   ],
                 ),

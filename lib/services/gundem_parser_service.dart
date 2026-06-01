@@ -253,89 +253,77 @@ class GundemParserService {
     }
   }
 
-  /// Kural tabanlı script başarısız olursa tek maddeyi Gemini AI veya özel API (örn. DeepSeek) aracılığıyla çözümler.
-  Future<YkKararModel?> _aiIleAyristir(String maddeText) async {
+  /// Ortak AI sorgulama metodu. Özel AI (DeepSeek vb.) ayarları varsa onları kullanır, yoksa Gemini AI'a düşer.
+  Future<String> _callAI(String prompt) async {
     final ayarlar = await SistemAyarlariService().get();
     final hasCustomAi = ayarlar != null && ayarlar.aiApiKey != null && ayarlar.aiApiKey!.trim().isNotEmpty;
 
     if (!hasCustomAi && !AppEnvironment.hasGeminiApiKey) {
-      debugPrint('Gemini API veya Özel AI Ayarları bulunamadı, fallback çalıştırılamadı.');
-      return null;
+      throw Exception('API Anahtarı bulunamadı (Gemini veya Özel AI).');
     }
 
-    try {
-      String text = '';
-      if (hasCustomAi) {
-        String baseUrl = ayarlar.aiApiUrl?.trim() ?? 'https://api.deepseek.com/v1';
-        if (!baseUrl.endsWith('/chat/completions')) {
-          if (baseUrl.endsWith('/')) {
-            baseUrl = '${baseUrl}chat/completions';
-          } else {
-            baseUrl = '$baseUrl/chat/completions';
-          }
+    if (hasCustomAi) {
+      String baseUrl = ayarlar.aiApiUrl?.trim() ?? 'https://api.deepseek.com/v1';
+      if (!baseUrl.endsWith('/chat/completions')) {
+        if (baseUrl.endsWith('/')) {
+          baseUrl = '${baseUrl}chat/completions';
+        } else {
+          baseUrl = '$baseUrl/chat/completions';
         }
-        
-        final prompt = '''
-Aşağıdaki metin bir yönetim kurulu gündem maddesidir. Bu metni analiz et ve şu 3 bilgiyi çıkar:
-1. Baslik: Maddenin başlığı veya numarası (Örn: Gündem 01).
-2. BirimAd: Talebi yapan merkezin veya birimin tam adı. Bulamazsan "Bilinmiyor" yaz.
-3. KararMetni: Maddenin detay açıklaması.
-
-Sonucu sadece aşağıdaki formatta, başka hiçbir kelime eklemeden döndür:
-BASLIK: [başlık buraya]
-BIRIM: [birim buraya]
-METIN: [metin buraya]
-
-Gündem Maddesi Metni:
-$maddeText
-''';
-
-        final modelName = ayarlar.aiModel?.trim() ?? 'deepseek-chat';
-        final response = await http.post(
-          Uri.parse(baseUrl),
-          headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Authorization': 'Bearer ${ayarlar.aiApiKey}',
-          },
-          body: jsonEncode({
-            'model': modelName,
-            'messages': [
-              {'role': 'user', 'content': prompt}
-            ],
-            'temperature': 0.1,
-          }),
-        );
-
-        if (response.statusCode != 200) {
-          throw Exception('API Hatası: ${response.statusCode} - ${response.body}');
-        }
-
-        final resData = jsonDecode(utf8.decode(response.bodyBytes));
-        text = resData['choices'][0]['message']['content']?.toString().trim() ?? '';
-      } else {
-        final model = GenerativeModel(
-          model: 'gemini-1.5-flash',
-          apiKey: AppEnvironment.geminiApiKey,
-        );
-
-        final prompt = '''
-Aşağıdaki metin bir yönetim kurulu gündem maddesidir. Bu metni analiz et ve şu 3 bilgiyi çıkar:
-1. Baslik: Maddenin başlığı veya numarası (Örn: Gündem 01).
-2. BirimAd: Talebi yapan merkezin veya birimin tam adı. Bulamazsan "Bilinmiyor" yaz.
-3. KararMetni: Maddenin detay açıklaması.
-
-Sonucu sadece aşağıdaki formatta, başka hiçbir kelime eklemeden döndür:
-BASLIK: [başlık buraya]
-BIRIM: [birim buraya]
-METIN: [metin buraya]
-
-Gündem Maddesi Metni:
-$maddeText
-''';
-
-        final response = await model.generateContent([Content.text(prompt)]);
-        text = response.text?.trim() ?? '';
       }
+      
+      final modelName = ayarlar.aiModel?.trim() ?? 'deepseek-chat';
+      final response = await http.post(
+        Uri.parse(baseUrl),
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Authorization': 'Bearer ${ayarlar.aiApiKey}',
+        },
+        body: jsonEncode({
+          'model': modelName,
+          'messages': [
+            {'role': 'user', 'content': prompt}
+          ],
+          'temperature': 0.1,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('API Hatası: ${response.statusCode} - ${response.body}');
+      }
+
+      final resData = jsonDecode(utf8.decode(response.bodyBytes));
+      return resData['choices'][0]['message']['content']?.toString().trim() ?? '';
+    } else {
+      final model = GenerativeModel(
+        model: 'gemini-1.5-flash',
+        apiKey: AppEnvironment.geminiApiKey,
+      );
+
+      final response = await model.generateContent([Content.text(prompt)]);
+      return response.text?.trim() ?? '';
+    }
+  }
+
+  /// Kural tabanlı script başarısız olursa tek maddeyi AI aracılığıyla çözümler.
+  Future<YkKararModel?> _aiIleAyristir(String maddeText) async {
+    try {
+      final prompt = '''
+Aşağıdaki metin bir yönetim kurulu gündem maddesidir. Bu metni analiz et ve şu 3 bilgiyi çıkar:
+1. Baslik: Maddenin başlığı veya numarası (Örn: Gündem 01).
+2. BirimAd: Talebi yapan merkezin veya birimin tam adı. Bulamazsan "Bilinmiyor" yaz.
+3. KararMetni: Maddenin detay açıklaması.
+
+Sonucu sadece aşağıdaki formatta, başka hiçbir kelime eklemeden döndür:
+BASLIK: [başlık buraya]
+BIRIM: [birim buraya]
+METIN: [metin buraya]
+
+Gündem Maddesi Metni:
+$maddeText
+''';
+
+      final text = await _callAI(prompt);
       
       final baslikMatch = RegExp(r'BASLIK:\s*(.+)').firstMatch(text);
       final birimMatch = RegExp(r'BIRIM:\s*(.+)').firstMatch(text);
@@ -361,8 +349,234 @@ $maddeText
         olusturmaTarihi: DateTime.now(),
       );
     } catch (e) {
-      debugPrint('AI Fallback hatası: $e');
+      debugPrint('[GundemParserService._aiIleAyristir] Hata: $e');
       return null;
+    }
+  }
+
+  /// Birimlerden gelen PDF üst yazısını / kararlarını analiz eder ve YK şablonlarına uygun kararlar üretir.
+  Future<List<YkKararModel>> _aiBirimKararlariniAyristir({
+    required String pdfText,
+    required String toplantiId,
+    required String toplantiNo,
+    required String toplantiTarihi,
+  }) async {
+    final prompt = '''
+Aşağıdaki metin bir üniversitenin biriminden (merkezinden/enstitüsünden/fakültesinden) gelen bir üst yazı ve/veya karar belgesidir.
+Lütfen bu metni analiz et ve içindeki tüm kararları tek tek ayıkla.
+Her bir karar için resmi Yürütme Kurulu (YK) kararı şablonuna göre taslak karar metni oluştur.
+
+Genel Bilgiler (Belgeden Çıkarılacak):
+- BIRIM_AD: Talebi gönderen birimin tam adı (Örn: Deri, Tekstil ve Seramik Tasarım Uygulama ve Araştırma Merkezi Müdürlüğü)
+- BIRIM_EVRAK_TARIHI: Evrakın tarihi (Örn: 23.05.2026)
+- BIRIM_EVRAK_SAYISI: Evrakın sayısı (Örn: E-14041313-050.04-351130)
+- BIRIM_KURUL_TARIHI: Birimin kendi kurul/karar tarihi (Örn: 21/05/2026)
+- BIRIM_TOPLANTI_SAYI: Birimin kendi kurul toplantı sayısı (Örn: 04)
+
+Kararlar:
+Metnin içinde geçen her bir karar için ayrı bir Yürütme Kurulu kararı oluştur.
+Eğer karar bir Danışmanlık/Ek Ödeme/Katkı Payı kararı ise ŞABLON A'yı doldur.
+Eğer karar 2547 Sayılı Kanun'un 58. maddesinin (k) fıkrası kapsamında bir sanayi işbirliği danışmanlığı ise ŞABLON B'yi doldur.
+
+ŞABLON A (Standart Danışmanlık / Ek Ödeme):
+"Üniversitemiz {BIRIM_AD} Müdürlüğü’nün {BIRIM_EVRAK_TARIHI} tarih ve {BIRIM_EVRAK_SAYISI} sayılı yazısı ile {BIRIM_KURUL_TARIHI} tarih, {BIRIM_TOPLANTI_SAYI} toplantı sayılı ve {BIRIM_KARAR_NO} numaralı kararına istinaden; Döner Sermaye Yürütme Kurulu’nun {YK_KARAR_TARIHI} tarih ve {YK_KARAR_NO} sayılı kararı ile {FIRMA_UNVAN}’nin talep ettiği “{ISIN_KONUSU}” kapsamında {DANISMANLIK_SURESI} ay süreyle Danışmanlık Hizmeti için görevlendirilen {HOCA_UNVAN} {HOCA_AD_SOYAD} tarafından verilen danışmanlık hizmetine istinaden elde edilen gelirden ayrılan katkı payından aşağıdaki gelir getirici faaliyet cetveli doğrultusunda, dönem ek ödeme katsayısının {KATSAYI} şeklinde belirlenmesi ve elde edilen puanlara göre hesaplanacak katkı payı dağıtımının gerçekleştirilmesine;"
+
+ŞABLON B (58/k Teknik Danışmanlık):
+"Üniversitemiz Yönetim Kurulunun {UYK_KARAR_TARIHI} tarih, {UYK_TOPLANTI_SAYI} toplantı sayılı, {UYK_KARAR_NO} numaralı kararıyla 2547 Sayılı Yükseköğretim Kanunun 58. maddesinin (k) fıkrası kapsamında {FIRMA_UNVAN} ye teknik danışmanlık hizmeti vermek üzere görevlendirilen {HOCA_UNVAN} {HOCA_AD_SOYAD} tarafından {HIZMET_BASLANGIC_TARIHI}-{HIZMET_BITIS_TARIHI} ({DANISMANLIK_SURESI} Aylık) tarihleri arasında gerçekleştirilen hizmet için elde edilen {GELIR_TUTARI} TL gelirden ayrılan {KATKI_PAYI_TUTARI} TL katkı payının adı geçen öğretim üyesine tahakkuk ettirilmesine;"
+
+Kurallar:
+- {YK_KARAR_TARIHI} değerini "$toplantiTarihi" yap.
+- {YK_KARAR_NO} değerini "$toplantiNo" yap.
+- {UYK_KARAR_TARIHI}, {UYK_TOPLANTI_SAYI}, {UYK_KARAR_NO} değerlerini eğer metinde geçiyorsa oradan al, geçmiyorsa boş bırak veya uygun bir varsayılan koy.
+- Metindeki firma adı, işin konusu, hoca unvanı ve adı, süre, katsayı gibi değişkenleri çıkarıp şablonda süslü parantezli yerlere yerleştir.
+- Katsayıyı iki basamaklı (Örn: 19,50 veya 0,42) formatta yaz.
+- Eğer metin bu şablonlara hiç uymayan bir bütçe aktarımı veya personel görevlendirmesi ise, resmi dille yazılmış düzgün bir Türkçe karar metni oluştur.
+
+Çıktı formatı mutlaka geçerli bir JSON array olmalıdır. Başka hiçbir açıklama yazısı, not veya markdown bloğu (```json gibi) ekleme, sadece JSON listesi döndür:
+[
+  {
+    "baslik": "Karar Başlığı (Örn: Karar 2026/18 veya Birim Kararı)",
+    "birimAd": "Birim Adı",
+    "kararMetni": "Şablona göre doldurulmuş karar metni",
+    "tur": "danismanlik" | "butceAktarim" | "ekOdeme" | "diger"
+  }
+]
+
+Gelen PDF Metni:
+$pdfText
+''';
+
+    try {
+      final responseText = await _callAI(prompt);
+      String jsonText = responseText.trim();
+      if (jsonText.startsWith('```')) {
+        final lines = jsonText.split('\n');
+        if (lines.first.startsWith('```')) {
+          lines.removeAt(0);
+        }
+        if (lines.last.startsWith('```')) {
+          lines.removeLast();
+        }
+        jsonText = lines.join('\n').trim();
+      }
+
+      final List<dynamic> list = jsonDecode(jsonText);
+      final listKarar = <YkKararModel>[];
+      for (final item in list) {
+        final map = item as Map<String, dynamic>;
+        YkKararTuru tur = YkKararTuru.diger;
+        final strTur = map['tur']?.toString().toLowerCase() ?? 'diger';
+        if (strTur == 'danismanlik') {
+          tur = YkKararTuru.danismanlik;
+        } else if (strTur == 'butceaktarim') {
+          tur = YkKararTuru.butceAktarim;
+        } else if (strTur == 'ekodeme') {
+          tur = YkKararTuru.ekOdeme;
+        }
+
+        listKarar.add(YkKararModel(
+          id: '',
+          toplantiId: toplantiId,
+          toplantiNo: toplantiNo,
+          kararNo: '',
+          baslik: map['baslik']?.toString() ?? 'Birim Kararı',
+          kararMetni: map['kararMetni']?.toString() ?? '',
+          birimAd: map['birimAd']?.toString() ?? 'Bilinmeyen Birim',
+          birimId: '',
+          iliskiliKayitId: '',
+          kararTarihi: toplantiTarihi,
+          tur: tur,
+          durum: YkKararDurum.taslak,
+          olusturmaTarihi: DateTime.now(),
+        ));
+      }
+      return listKarar;
+    } catch (e) {
+      debugPrint('[GundemParserService._aiBirimKararlariniAyristir] Hata: $e');
+      return [];
+    }
+  }
+
+  /// Yüklenen PDF dosyasını okur, kararları ayrıştırır ve doğrudan belirtilen toplantıya atayarak kaydeder.
+  /// Ayrıca bu kararlara karşılık gelen Gündem Maddelerini üretir.
+  Future<(List<YkKararModel>, List<GundemMaddesi>)> pdfToplantiyaKararVeGundemAktar({
+    required String toplantiId,
+    required String toplantiNo,
+    required String toplantiTarihi,
+    required Uint8List pdfBytes,
+  }) async {
+    try {
+      // 1. PDF'ten Metni Çıkar
+      final document = PdfDocument(inputBytes: pdfBytes);
+      final textExtractor = PdfTextExtractor(document);
+      final pdfMetni = textExtractor.extractText();
+      document.dispose();
+
+      if (pdfMetni.trim().isEmpty) {
+        throw Exception('PDF belgesinden metin çıkarılamadı veya belge boş.');
+      }
+
+      final sanitizedMetin = _sanitizeExtractedText(pdfMetni);
+
+      // 2. Metni Parçala / Ayıkla
+      final containsGundem = sanitizedMetin.toLowerCase().contains('gündem');
+      final parcalar = _scriptIleParcala(sanitizedMetin);
+      
+      final kararlar = <YkKararModel>[];
+      final gundemMaddeleri = <GundemMaddesi>[];
+
+      if (!containsGundem || parcalar.length <= 1) {
+        // Bu bir birim karar/üst yazı belgesidir. AI ile analiz et ve şablona uygun kararlar çıkar.
+        final extracted = await _aiBirimKararlariniAyristir(
+          pdfText: sanitizedMetin,
+          toplantiId: toplantiId,
+          toplantiNo: toplantiNo,
+          toplantiTarihi: toplantiTarihi,
+        );
+        
+        for (int i = 0; i < extracted.length; i++) {
+          final k = extracted[i];
+          final yeniKararNo = await _ykService.sonrakiKararNoUret(toplantiNo);
+          
+          final finalKarar = k.copyWith(
+            toplantiId: toplantiId,
+            toplantiNo: toplantiNo,
+            kararNo: yeniKararNo,
+            kararTarihi: toplantiTarihi,
+            durum: YkKararDurum.taslak,
+            olusturmaTarihi: DateTime.now(),
+          );
+          
+          kararlar.add(finalKarar);
+          gundemMaddeleri.add(GundemMaddesi(
+            siraNo: i + 1,
+            baslik: finalKarar.baslik,
+            tur: _convertKararTuruToGundemTuru(finalKarar.tur),
+            birimAd: finalKarar.birimAd,
+            birimId: finalKarar.birimId,
+            aciklama: '',
+          ));
+        }
+      } else {
+        // Klasik Gündem listesidir (Gündem 01:, Gündem 02: şeklinde parçalanabilir)
+        for (int i = 0; i < parcalar.length; i++) {
+          final maddeText = parcalar[i];
+          YkKararModel? karar;
+          if (maddeText.toLowerCase().contains('gündem')) {
+            karar = _scriptIleAyristir(maddeText);
+          }
+          
+          if (karar == null) {
+            karar = await _aiIleAyristir(maddeText);
+          }
+
+          if (karar != null) {
+            final yeniKararNo = await _ykService.sonrakiKararNoUret(toplantiNo);
+            final guncelKarar = karar.copyWith(
+              toplantiId: toplantiId,
+              toplantiNo: toplantiNo,
+              kararNo: yeniKararNo,
+              kararTarihi: toplantiTarihi,
+              durum: YkKararDurum.taslak,
+            );
+            
+            kararlar.add(guncelKarar);
+            gundemMaddeleri.add(GundemMaddesi(
+              siraNo: i + 1,
+              baslik: guncelKarar.baslik,
+              tur: _convertKararTuruToGundemTuru(guncelKarar.tur),
+              birimAd: guncelKarar.birimAd,
+              birimId: guncelKarar.birimId,
+              aciklama: '',
+            ));
+          }
+        }
+      }
+
+      // 3. Firestore'a Kararları Kaydet
+      for (final k in kararlar) {
+        await _ykService.create(k);
+      }
+
+      return (kararlar, gundemMaddeleri);
+    } catch (e) {
+      debugPrint('[GundemParserService.pdfToplantiyaKararVeGundemAktar] Hata: $e');
+      rethrow;
+    }
+  }
+
+  GundemTuru _convertKararTuruToGundemTuru(YkKararTuru tur) {
+    switch (tur) {
+      case YkKararTuru.danismanlik:
+        return GundemTuru.danismanlik;
+      case YkKararTuru.butceAktarim:
+        return GundemTuru.butceAktarim;
+      case YkKararTuru.ekOdeme:
+        return GundemTuru.ekOdeme;
+      case YkKararTuru.disHekimligi:
+        return GundemTuru.disHekimligi;
+      case YkKararTuru.diger:
+        return GundemTuru.diger;
     }
   }
 }

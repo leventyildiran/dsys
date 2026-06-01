@@ -9,6 +9,8 @@ class SistemAyarlariModel {
     this.aiApiUrl,
     this.aiModel,
     this.kurulUyeleri,
+    this.kurumAdi,
+    this.antetBasligi,
   });
 
   final double memurMaasKatsayisi;
@@ -19,9 +21,17 @@ class SistemAyarlariModel {
   final String? aiApiUrl;
   final String? aiModel;
   final List<KurulUyesiModel>? kurulUyeleri;
+  final String? kurumAdi;
+  final String? antetBasligi;
 
   /// Hesaplanan EYDMA değeri.
   double get hesaplananEydma => eydmaGosterge * memurMaasKatsayisi;
+
+  /// Kurum / Üniversite adı (boşsa varsayılanı döner).
+  String get kurumAdiGuncel => (kurumAdi == null || kurumAdi!.trim().isEmpty) ? 'UŞAK ÜNİVERSİTESİ' : kurumAdi!;
+
+  /// Karar / Antet başlığı (boşsa varsayılanı döner).
+  String get antetBasligiGuncel => (antetBasligi == null || antetBasligi!.trim().isEmpty) ? 'DÖNER SERMAYE YÜRÜTME KURULU KARARLARI' : antetBasligi!;
 
   /// Kurul üyeleri listesi (boşsa varsayılan listeyi döner).
   List<KurulUyesiModel> get kurulUyeleriListesi =>
@@ -58,6 +68,8 @@ class SistemAyarlariModel {
       kurulUyeleri: (map['kurulUyeleri'] as List?)
           ?.map((e) => KurulUyesiModel.fromMap(Map<String, dynamic>.from(e as Map)))
           .toList(),
+      kurumAdi: map['kurumAdi'] as String?,
+      antetBasligi: map['antetBasligi'] as String?,
     );
   }
 
@@ -73,6 +85,8 @@ class SistemAyarlariModel {
       'aiModel': aiModel,
       if (kurulUyeleri != null)
         'kurulUyeleri': kurulUyeleri!.map((e) => e.toMap()).toList(),
+      'kurumAdi': kurumAdi,
+      'antetBasligi': antetBasligi,
     };
   }
 }

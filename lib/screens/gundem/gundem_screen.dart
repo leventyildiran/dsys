@@ -16,10 +16,15 @@ import '../../services/pdf_service.dart';
 
 /// Toplantı Gündem Derleyici ekranı.
 class GundemScreen extends StatefulWidget {
-  const GundemScreen({super.key, this.embedded = false});
+  const GundemScreen({
+    super.key,
+    this.embedded = false,
+    this.onToplantiSecildi,
+  });
 
   /// Dashboard içine embed edildiğinde AppBar gösterilmez.
   final bool embedded;
+  final VoidCallback? onToplantiSecildi;
 
   @override
   State<GundemScreen> createState() => _GundemScreenState();
@@ -183,7 +188,11 @@ class _GundemScreenState extends State<GundemScreen> {
       child: InkWell(
         onTap: () {
           provider.toplantiYukle(toplanti.id);
-          _gundemDetayDialog(context, toplanti, provider);
+          if (widget.onToplantiSecildi != null) {
+            widget.onToplantiSecildi!();
+          } else {
+            _gundemDetayDialog(context, toplanti, provider);
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(

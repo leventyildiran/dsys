@@ -10,6 +10,7 @@ class ToplantiModel {
     this.gundemMaddeleri = const [],
     this.durum = ToplantiDurum.taslak,
     this.olusturmaTarihi,
+    this.pdfUrls = const [],
   });
 
   final String id;
@@ -18,9 +19,11 @@ class ToplantiModel {
   final List<GundemMaddesi> gundemMaddeleri;
   final ToplantiDurum durum;
   final DateTime? olusturmaTarihi;
+  final List<String> pdfUrls;
 
   factory ToplantiModel.fromMap(String id, Map<String, dynamic> map) {
     final maddelerData = map['gundemMaddeleri'] as List<dynamic>? ?? [];
+    final pdfUrlsData = map['pdfUrls'] as List<dynamic>? ?? [];
     return ToplantiModel(
       id: id,
       toplantiTarihi: map['toplantiTarihi'] ?? '',
@@ -32,6 +35,7 @@ class ToplantiModel {
       olusturmaTarihi: map['olusturmaTarihi'] != null
           ? DateTime.tryParse(map['olusturmaTarihi'])
           : null,
+      pdfUrls: List<String>.from(pdfUrlsData),
     );
   }
 
@@ -42,6 +46,7 @@ class ToplantiModel {
       'gundemMaddeleri': gundemMaddeleri.map((m) => m.toMap()).toList(),
       'durum': durum.value,
       'olusturmaTarihi': olusturmaTarihi?.toIso8601String(),
+      'pdfUrls': pdfUrls,
     };
   }
 
@@ -50,6 +55,7 @@ class ToplantiModel {
     String? toplantiNo,
     List<GundemMaddesi>? gundemMaddeleri,
     ToplantiDurum? durum,
+    List<String>? pdfUrls,
   }) {
     return ToplantiModel(
       id: id,
@@ -58,6 +64,7 @@ class ToplantiModel {
       gundemMaddeleri: gundemMaddeleri ?? this.gundemMaddeleri,
       durum: durum ?? this.durum,
       olusturmaTarihi: olusturmaTarihi,
+      pdfUrls: pdfUrls ?? this.pdfUrls,
     );
   }
 }

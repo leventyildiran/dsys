@@ -92,6 +92,37 @@ class BelgeUretimServisi {
     return _buildDocxArchive(docXml);
   }
 
+  /// Düz metinden Word (DOCX) dosyası üretir.
+  static Uint8List metindenDocxOlustur(String content) {
+    final paragraphs = content.split('\n').map((line) {
+      final escaped = _xmlEscape(line);
+      return '''<w:p><w:r><w:t xml:space="preserve">$escaped</w:t></w:r></w:p>''';
+    }).join('\n');
+
+    final docXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:o="urn:schemas-microsoft-com:office:office"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
+            xmlns:v="urn:schemas-microsoft-com:vml"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:w10="urn:schemas-microsoft-com:office:word"
+            xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"
+            xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup"
+            xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk"
+            xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml"
+            xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+            mc:Ignorable="w14 wp14">
+  <w:body>
+$paragraphs
+  </w:body>
+</w:document>''';
+
+    return _buildDocxArchive(docXml);
+  }
+
   // ─────────────────────────────────────────────────────────────
   // 2. YARDIMCI: VERİ HAZIRLAMA
   // ─────────────────────────────────────────────────────────────
