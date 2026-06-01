@@ -1,12 +1,18 @@
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:printing/printing.dart';
 
+import '../../models/birim_model.dart';
 import '../../models/gundem_model.dart';
 import '../../providers/gundem_provider.dart';
+import '../../services/data_service.dart';
+import '../../services/gundem_parser_service.dart';
+import '../../services/pdf_service.dart';
 
 /// Toplantı Gündem Derleyici ekranı.
 class GundemScreen extends StatefulWidget {
@@ -26,6 +32,47 @@ class _GundemScreenState extends State<GundemScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GundemProvider>().toplantilariYukle();
     });
+  }
+
+  Future<void> _pdfGundemMaddeleriEkle(
+    BuildContext context,
+    String toplantiId,
+    GundemProvider provider,
+  ) async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) return;
+
+    final bytes = result.files.first.bytes;
+    if (bytes == null) return;
+
+    try {
+      final parser = GundemParserService();
+      // PDF'ten metni çıkar ve gündem maddelerine dönüştür
+      final pdfDoc = parser.pdfMetniCikar(bytes);
+      final maddeler = parser.metniGundemMaddelerineAyristir(pdfDoc);
+
+      // Ayrıştırılan her maddeyi bu toplantıya ekle
+      for (final madde in maddeler) {
+        await provider.gundemMaddesiEkle(toplantiId, madde);
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${maddeler.length} gündem maddesi PDF\'ten eklendi.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF okuma hatası: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -259,9 +306,19 @@ class _GundemScreenState extends State<GundemScreen> {
                       ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
+                  onPressed: () => _pdfGundemMaddeleriEkle(context, guncelToplanti.id, gundemProv),
+                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                  label: const Text('PDF\'ten Ekle'),
+                ),
+                 TextButton(
                   onPressed: () => _yeniMaddeDialog(context, guncelToplanti.id, gundemProv),
                   child: const Text('Madde Ekle'),
+                ),
+                TextButton.icon(
+                  onPressed: () => _pdfGundemOnizlemeDialog(context, guncelToplanti),
+                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                  label: const Text('PDF Önizle'),
                 ),
                 TextButton(
                   onPressed: () async {
@@ -335,10 +392,37 @@ class _GundemScreenState extends State<GundemScreen> {
                     }
                   },
                 ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: birimAdController,
-                  decoration: const InputDecoration(labelText: 'Birim Adı (Opsiyonel)'),
+                FutureBuilder<List<BirimModel>>(
+                  future: BirimService().getAll(onlyActive: true),
+                  builder: (context, snapshot) {
+                    final list = snapshot.data ?? [];
+                    String? currentValue;
+                    if (list.any((b) => b.ad == birimAdController.text)) {
+                      currentValue = birimAdController.text;
+                    }
+                    return DropdownButtonFormField<String?>(
+                      value: currentValue,
+                      decoration: const InputDecoration(
+                        labelText: 'Birim Seçin (Opsiyonel)',
+                        prefixIcon: Icon(Icons.business_rounded),
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Genel / Birim Yok'),
+                        ),
+                        ...list.map((b) => DropdownMenuItem<String?>(
+                              value: b.ad,
+                              child: Text('${b.kisaAd} - ${b.ad}'),
+                            )),
+                      ],
+                      onChanged: (val) {
+                        setState(() {
+                          birimAdController.text = val ?? '';
+                        });
+                      },
+                    );
+                  },
                 ),
                 const SizedBox(height: 8),
                 TextField(
@@ -416,6 +500,41 @@ class _GundemScreenState extends State<GundemScreen> {
             child: const Text('Oluştur'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _pdfGundemOnizlemeDialog(BuildContext context, ToplantiModel toplanti) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        contentPadding: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.picture_as_pdf_rounded, color: Colors.red),
+            const SizedBox(width: 8),
+            Text('Gündem PDF Önizleme (Toplantı: ${toplanti.toplantiNo})'),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 850,
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: PdfPreview(
+            build: (format) => PdfService.ykGundemPdfUret(toplanti),
+            canChangeOrientation: false,
+            canChangePageFormat: false,
+            canDebug: false,
+            allowPrinting: true,
+            allowSharing: true,
+            pdfFileName: 'gundem_${toplanti.toplantiNo.replaceAll('/', '_')}.pdf',
+          ),
+        ),
       ),
     );
   }

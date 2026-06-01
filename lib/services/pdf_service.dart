@@ -2,9 +2,13 @@ import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../core/turkce_format.dart';
 import '../models/fatura_model.dart';
+import '../models/gundem_model.dart';
+import '../models/yk_karar_model.dart';
+import '../models/sistem_ayarlari_model.dart';
 
 /// PDF fatura üretim servisi.
 ///
@@ -297,4 +301,279 @@ class PdfService {
       ),
     );
   }
+
+  /// Yürütme Kurulu Karar Defteri için PDF üretir.
+  static Future<Uint8List> ykKararDefteriPdfUret(
+    ToplantiModel toplanti,
+    List<YkKararModel> kararlar,
+    List<KurulUyesiModel> kurulUyeleri,
+  ) async {
+    final pdf = pw.Document();
+
+    final regularFont = await PdfGoogleFonts.robotoRegular();
+    final boldFont = await PdfGoogleFonts.robotoBold();
+
+    final textStyle = pw.TextStyle(font: regularFont, fontSize: 10, height: 1.4);
+    final boldStyle = pw.TextStyle(font: boldFont, fontSize: 10);
+    final titleStyle = pw.TextStyle(font: boldFont, fontSize: 12);
+
+    final baskanUye = kurulUyeleri.firstWhere(
+      (u) => u.gorev.toLowerCase().contains('başkan') || u.gorev.toLowerCase().contains('baskan'),
+      orElse: () => kurulUyeleri.isNotEmpty
+          ? kurulUyeleri.first
+          : const KurulUyesiModel(siraNo: '1', gorev: 'Başkan', adSoyad: ''),
+    );
+    final baskanAdi = baskanUye.adSoyad;
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (context) {
+          return [
+            // Resmi Başlık
+            pw.Center(
+              child: pw.Text(
+                'T.C.',
+                style: boldStyle,
+              ),
+            ),
+            pw.Center(
+              child: pw.Text(
+                'UŞAK ÜNİVERSİTESİ REKTÖRLÜĞÜ',
+                style: boldStyle,
+              ),
+            ),
+            pw.Center(
+              child: pw.Text(
+                'Döner Sermaye İşletme Müdürlüğü',
+                style: textStyle,
+              ),
+            ),
+            pw.SizedBox(height: 15),
+
+            // Toplantı Bilgileri Kutusu (Double border)
+            pw.Container(
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.black, width: 2),
+              ),
+              padding: const pw.EdgeInsets.all(1), // Çift çizgi efekti için iç boşluk
+              child: pw.Container(
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.black, width: 0.8),
+                ),
+                padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                child: pw.Column(
+                  children: [
+                    pw.Center(
+                      child: pw.Text(
+                        'DÖNER SERMAYE YÜRÜTME KURULU KARARLARI',
+                        style: titleStyle,
+                      ),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Divider(thickness: 0.8, color: PdfColors.black),
+                    pw.SizedBox(height: 4),
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text('TOPLANTI SAYISI: ${toplanti.toplantiNo}', style: boldStyle),
+                        pw.Text('KARAR TARİHİ: ${toplanti.toplantiTarihi}', style: boldStyle),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            pw.SizedBox(height: 15),
+
+            // Preamble / Giriş Metni
+            pw.Paragraph(
+              text:
+                  "Uşak Üniversitesi Döner Sermaye Yürütme Kurulu, $baskanAdi başkanlığında ${toplanti.toplantiTarihi} tarihinde saat 14:00' te toplandı. Gündem maddeleri görüşülerek aşağıdaki kararlar alındı.",
+              style: textStyle,
+              textAlign: pw.TextAlign.justify,
+            ),
+
+            // Kararlar Listesi
+            if (kararlar.isEmpty)
+              pw.Paragraph(
+                text: 'Bu toplantıya ait onaylanmış karar bulunmamaktadır.',
+                style: textStyle,
+              )
+            else
+              ...kararlar.map((karar) {
+                return pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.SizedBox(height: 15),
+                    pw.Text(
+                      'KARAR ${karar.kararNo.isNotEmpty ? karar.kararNo : "Taslak"}',
+                      style: boldStyle,
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Paragraph(
+                      text: karar.kararMetni,
+                      style: textStyle,
+                      textAlign: pw.TextAlign.justify,
+                    ),
+                  ],
+                );
+              }),
+
+            pw.SizedBox(height: 20),
+            // Oy birliği ifadesi
+            pw.Center(
+              child: pw.Text(
+                'Katılanların oy birliği ile karar verildi.',
+                style: textStyle,
+              ),
+            ),
+            pw.SizedBox(height: 20),
+
+            // İmza Tablosu
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.black, width: 0.8),
+              columnWidths: {
+                0: const pw.FixedColumnWidth(50),
+                1: const pw.FixedColumnWidth(80),
+                2: const pw.FlexColumnWidth(3),
+                3: const pw.FixedColumnWidth(100),
+              },
+              children: [
+                pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text('Sıra No', style: boldStyle, textAlign: pw.TextAlign.center),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text('Görevi', style: boldStyle, textAlign: pw.TextAlign.center),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text('Üyenin Adı Soyadı', style: boldStyle, textAlign: pw.TextAlign.center),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text('İmzası', style: boldStyle, textAlign: pw.TextAlign.center),
+                    ),
+                  ],
+                ),
+                ...List.generate(kurulUyeleri.length, (index) {
+                  final uye = kurulUyeleri[index];
+                  return _buildSignatureRow(
+                    (index + 1).toString(),
+                    uye.gorev,
+                    uye.adSoyad,
+                    boldStyle,
+                    textStyle,
+                  );
+                }),
+              ],
+            ),
+          ];
+        },
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  static pw.TableRow _buildSignatureRow(
+    String siraNo,
+    String gorev,
+    String adSoyad,
+    pw.TextStyle boldStyle,
+    pw.TextStyle textStyle,
+  ) {
+    return pw.TableRow(
+      children: [
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.Text(siraNo, style: textStyle, textAlign: pw.TextAlign.center),
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.Text(gorev, style: textStyle),
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.Text(adSoyad, style: boldStyle),
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.SizedBox(height: 25),
+        ),
+      ],
+    );
+  }
+
+  /// Toplantı Gündem Maddeleri için PDF üretir (Word antetli şablona göre).
+  static Future<Uint8List> ykGundemPdfUret(ToplantiModel toplanti) async {
+    final pdf = pw.Document();
+
+    final regularFont = await PdfGoogleFonts.robotoRegular();
+    final boldFont = await PdfGoogleFonts.robotoBold();
+
+    final textStyle = pw.TextStyle(font: regularFont, fontSize: 11, height: 1.5);
+    final boldStyle = pw.TextStyle(font: boldFont, fontSize: 11);
+    final titleStyle = pw.TextStyle(font: boldFont, fontSize: 13, decoration: pw.TextDecoration.underline);
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.symmetric(horizontal: 50, vertical: 40),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header title
+              pw.Center(
+                child: pw.Text(
+                  'DÖNER SERMAYE YÜRÜTME KURULU GÜNDEM MADDELERİ',
+                  style: titleStyle,
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+              pw.SizedBox(height: 25),
+
+              // Intro text
+              pw.Text(
+                'Uşak Üniversitesi Döner Sermaye Yürütme Kurulunun ${toplanti.toplantiTarihi} tarihli toplantı gündem maddeleri aşağıdaki gibidir.',
+                style: textStyle,
+              ),
+              pw.SizedBox(height: 15),
+
+              // Agenda list
+              ...toplanti.gundemMaddeleri.map((madde) {
+                final siraStr = madde.siraNo.toString().padLeft(2, '0');
+                return pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 12),
+                  child: pw.RichText(
+                    text: pw.TextSpan(
+                      children: [
+                        pw.TextSpan(
+                          text: 'Gündem $siraStr: ',
+                          style: boldStyle,
+                        ),
+                        pw.TextSpan(
+                          text: madde.baslik,
+                          style: textStyle,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf.save();
+  }
 }
+

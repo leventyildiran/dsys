@@ -3,8 +3,10 @@ import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/turkce_format.dart';
+import '../../models/birim_model.dart';
 import '../../models/fatura_model.dart';
 import '../../providers/fatura_provider.dart';
+import '../../services/data_service.dart';
 import '../../services/pdf_service.dart';
 
 /// Otomatik Fatura Basım / PDF Önizleme ekranı.
@@ -22,8 +24,8 @@ class _FaturaScreenState extends State<FaturaScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _metinController = TextEditingController();
-  String _secilenBirimId = '';
-  String _secilenBirimAd = 'UBATAM';
+  String? _secilenBirimId;
+  String? _secilenBirimAd;
 
   @override
   void initState() {
@@ -224,28 +226,49 @@ class _FaturaScreenState extends State<FaturaScreen>
           ),
           const SizedBox(height: 12),
           // Birim seçimi
-          DropdownButtonFormField<String>(
-            value: _secilenBirimAd,
-            decoration: InputDecoration(
-              labelText: 'Birim',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'UBATAM', child: Text('UBATAM')),
-              DropdownMenuItem(value: 'TUDAM', child: Text('TUDAM')),
-              DropdownMenuItem(
-                  value: 'Diş Hekimliği', child: Text('Diş Hekimliği')),
-              DropdownMenuItem(
-                  value: 'Mühendislik', child: Text('Mühendislik')),
-              DropdownMenuItem(value: 'Tıp Fakültesi', child: Text('Tıp Fakültesi')),
-            ],
-            onChanged: (value) {
-              setState(() {
-                _secilenBirimAd = value ?? 'UBATAM';
-                _secilenBirimId = value?.toLowerCase().replaceAll(' ', '_') ?? '';
-              });
+          FutureBuilder<List<BirimModel>>(
+            future: BirimService().getAll(onlyActive: true),
+            builder: (context, snapshot) {
+              final list = snapshot.data ?? [];
+              
+              String? currentValue;
+              if (_secilenBirimId != null && list.any((b) => b.id == _secilenBirimId)) {
+                currentValue = _secilenBirimId;
+              } else if (list.isNotEmpty && _secilenBirimId == null) {
+                currentValue = list.first.id;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _secilenBirimId == null) {
+                    setState(() {
+                      _secilenBirimId = list.first.id;
+                      _secilenBirimAd = list.first.ad;
+                    });
+                  }
+                });
+              }
+
+              return DropdownButtonFormField<String>(
+                value: currentValue,
+                decoration: InputDecoration(
+                  labelText: 'Birim',
+                  prefixIcon: const Icon(Icons.business_rounded),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                items: list.map((b) => DropdownMenuItem<String>(
+                      value: b.id,
+                      child: Text('${b.kisaAd} - ${b.ad}'),
+                    )).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    final selected = list.firstWhere((b) => b.id == value);
+                    setState(() {
+                      _secilenBirimId = value;
+                      _secilenBirimAd = selected.ad;
+                    });
+                  }
+                },
+              );
             },
           ),
           const SizedBox(height: 16),
@@ -276,13 +299,15 @@ class _FaturaScreenState extends State<FaturaScreen>
               if (provider.parseSonuclari.isNotEmpty)
                 Expanded(
                   child: FilledButton.tonalIcon(
-                    onPressed: () {
-                      provider.topluFaturaOlustur(
-                        birimId: _secilenBirimId,
-                        birimAd: _secilenBirimAd,
-                      );
-                      _metinController.clear();
-                    },
+                    onPressed: (_secilenBirimId == null || _secilenBirimId!.isEmpty)
+                        ? null
+                        : () {
+                            provider.topluFaturaOlustur(
+                              birimId: _secilenBirimId!,
+                              birimAd: _secilenBirimAd!,
+                            );
+                            _metinController.clear();
+                          },
                     icon: const Icon(Icons.save),
                     label: Text(
                         '${provider.parseSonuclari.length} Fatura Oluştur'),

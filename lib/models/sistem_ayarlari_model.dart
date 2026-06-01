@@ -5,15 +5,39 @@ class SistemAyarlariModel {
     required this.eydmaGosterge,
     required this.varsayilanKesintiler,
     required this.unvanKatsayilari,
+    this.aiApiKey,
+    this.aiApiUrl,
+    this.aiModel,
+    this.kurulUyeleri,
   });
 
   final double memurMaasKatsayisi;
   final int eydmaGosterge; // 9500 (1500+8000)
   final VarsayilanKesintiler varsayilanKesintiler;
   final Map<String, double> unvanKatsayilari;
+  final String? aiApiKey;
+  final String? aiApiUrl;
+  final String? aiModel;
+  final List<KurulUyesiModel>? kurulUyeleri;
 
   /// Hesaplanan EYDMA değeri.
   double get hesaplananEydma => eydmaGosterge * memurMaasKatsayisi;
+
+  /// Kurul üyeleri listesi (boşsa varsayılan listeyi döner).
+  List<KurulUyesiModel> get kurulUyeleriListesi =>
+      (kurulUyeleri == null || kurulUyeleri!.isEmpty)
+          ? varsayilanKurulUyeleri
+          : kurulUyeleri!;
+
+  /// Varsayılan kurul üyeleri.
+  static List<KurulUyesiModel> get varsayilanKurulUyeleri => const [
+        KurulUyesiModel(siraNo: '1', gorev: 'Başkan', adSoyad: 'Prof. Dr. Selçuk SAMANLI'),
+        KurulUyesiModel(siraNo: '2', gorev: 'Üye', adSoyad: 'Prof. Dr. Mehmet Ali GÜNGÖR'),
+        KurulUyesiModel(siraNo: '3', gorev: 'Üye', adSoyad: 'Doç. Dr. Erkan HALAY'),
+        KurulUyesiModel(siraNo: '4', gorev: 'Üye', adSoyad: 'Doç. Dr. Mustafa TAYTAK'),
+        KurulUyesiModel(siraNo: '5', gorev: 'Üye', adSoyad: 'Ercan BİLGEÇ'),
+        KurulUyesiModel(siraNo: '6', gorev: 'Raportör', adSoyad: 'Levent YILDIRAN'),
+      ];
 
   factory SistemAyarlariModel.fromMap(Map<String, dynamic> map) {
     final kesintilerMap =
@@ -28,6 +52,12 @@ class SistemAyarlariModel {
       unvanKatsayilari: unvanMap.map(
         (key, value) => MapEntry(key, (value as num).toDouble()),
       ),
+      aiApiKey: map['aiApiKey'] as String?,
+      aiApiUrl: map['aiApiUrl'] as String?,
+      aiModel: map['aiModel'] as String?,
+      kurulUyeleri: (map['kurulUyeleri'] as List?)
+          ?.map((e) => KurulUyesiModel.fromMap(Map<String, dynamic>.from(e as Map)))
+          .toList(),
     );
   }
 
@@ -38,6 +68,11 @@ class SistemAyarlariModel {
       'hesaplananEydma': hesaplananEydma,
       'varsayilanKesintiler': varsayilanKesintiler.toMap(),
       'unvanKatsayilari': unvanKatsayilari,
+      'aiApiKey': aiApiKey,
+      'aiApiUrl': aiApiUrl,
+      'aiModel': aiModel,
+      if (kurulUyeleri != null)
+        'kurulUyeleri': kurulUyeleri!.map((e) => e.toMap()).toList(),
     };
   }
 }
@@ -74,3 +109,33 @@ class VarsayilanKesintiler {
     };
   }
 }
+
+/// Kurul üyesi modeli.
+class KurulUyesiModel {
+  const KurulUyesiModel({
+    required this.siraNo,
+    required this.gorev,
+    required this.adSoyad,
+  });
+
+  final String siraNo;
+  final String gorev;
+  final String adSoyad;
+
+  factory KurulUyesiModel.fromMap(Map<String, dynamic> map) {
+    return KurulUyesiModel(
+      siraNo: map['siraNo'] as String? ?? '',
+      gorev: map['gorev'] as String? ?? '',
+      adSoyad: map['adSoyad'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'siraNo': siraNo,
+      'gorev': gorev,
+      'adSoyad': adSoyad,
+    };
+  }
+}
+

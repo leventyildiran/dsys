@@ -99,12 +99,22 @@ class YkKararProvider extends ChangeNotifier {
   }
 
   /// Karar metnini veya başlığını günceller.
-  Future<bool> kararGuncelle(String id, String baslik, String kararMetni) async {
+  Future<bool> kararGuncelle(
+    String id,
+    String baslik,
+    String kararMetni, {
+    String? birimId,
+    String? birimAd,
+  }) async {
     try {
-      await _service.update(id, {
+      final updates = <String, dynamic>{
         'baslik': baslik,
         'kararMetni': kararMetni,
-      });
+      };
+      if (birimId != null) updates['birimId'] = birimId;
+      if (birimAd != null) updates['birimAd'] = birimAd;
+
+      await _service.update(id, updates);
       _basariMesaji = 'Karar başarıyla güncellendi.';
       await kararlariYukle();
       return true;

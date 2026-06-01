@@ -70,6 +70,7 @@ dependencies:
   google_generative_ai: ^0.4.7
   file_picker: ^11.0.2
   syncfusion_flutter_pdf: ^33.2.8
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:

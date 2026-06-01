@@ -8,7 +8,6 @@ import '../../providers/user_provider.dart';
 import '../ayarlar/sistem_ayarlari_screen.dart';
 import '../birim/birim_yonetim_screen.dart';
 import '../danismanlik/danismanlik_yonetim_screen.dart';
-import '../dis_hekimligi/dis_hekimligi_screen.dart';
 import '../ek_odeme/ek_odeme_screen.dart';
 import '../evrak_arsiv/evrak_arsiv_screen.dart';
 import '../fatura/fatura_screen.dart';
@@ -105,10 +104,6 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
         label: 'Ek Ödeme',
       ),
       const _NavItem(
-        icon: Icons.medical_services_rounded,
-        label: 'Diş Hekimliği',
-      ),
-      const _NavItem(
         icon: Icons.gavel_rounded,
         label: 'Yürütme Kurulu',
       ),
@@ -183,18 +178,29 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       body: Row(
         children: [
           if (isWideScreen)
-            NavigationRail(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) {
-                setState(() => _selectedIndex = index);
-              },
-              labelType: NavigationRailLabelType.all,
-              destinations: _navItems
-                  .map((item) => NavigationRailDestination(
-                        icon: Icon(item.icon),
-                        label: Text(item.label),
-                      ))
-                  .toList(),
+            SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height - 
+                      AppBar().preferredSize.height - 
+                      MediaQuery.of(context).padding.top,
+                ),
+                child: IntrinsicHeight(
+                  child: NavigationRail(
+                    selectedIndex: _selectedIndex,
+                    onDestinationSelected: (index) {
+                      setState(() => _selectedIndex = index);
+                    },
+                    labelType: NavigationRailLabelType.all,
+                    destinations: _navItems
+                        .map((item) => NavigationRailDestination(
+                              icon: Icon(item.icon),
+                              label: Text(item.label),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ),
             ),
           if (isWideScreen) const VerticalDivider(thickness: 1, width: 1),
           Expanded(
@@ -228,24 +234,22 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 2:
         return const EkOdemeScreen(embedded: true);
       case 3:
-        return const DisHekimligiScreen(embedded: true);
-      case 4:
         return const YkYonetimScreen();
-      case 5:
+      case 4:
         return const RaporlamaScreen(embedded: true);
-      case 6:
+      case 5:
         return const EvrakArsivScreen(embedded: true);
-      case 7:
+      case 6:
         return const FaturaScreen(embedded: true);
-      case 8:
+      case 7:
         return const PersonelYonetimScreen();
-      case 9:
+      case 8:
         return const FirmaYonetimScreen();
-      case 10:
+      case 9:
         return const KullaniciYonetimScreen();
-      case 11:
+      case 10:
         return const BirimYonetimScreen();
-      case 12:
+      case 11:
         return const SistemAyarlariScreen();
       default:
         assert(false, 'Geçersiz navigasyon index: $_selectedIndex');

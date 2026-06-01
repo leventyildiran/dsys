@@ -31,6 +31,9 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
   final _bapController = TextEditingController();
   final _aracGerecController = TextEditingController();
   final _dagitilabilirController = TextEditingController();
+  final _aiApiUrlController = TextEditingController();
+  final _aiApiKeyController = TextEditingController();
+  final _aiModelController = TextEditingController();
 
   // Ünvan katsayıları
   final Map<String, TextEditingController> _unvanControllers = {};
@@ -58,6 +61,9 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
     _bapController.dispose();
     _aracGerecController.dispose();
     _dagitilabilirController.dispose();
+    _aiApiUrlController.dispose();
+    _aiApiKeyController.dispose();
+    _aiModelController.dispose();
     for (final c in _unvanControllers.values) {
       c.dispose();
     }
@@ -81,6 +87,9 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
             ayarlar.varsayilanKesintiler.aracGerecPayi.toString();
         _dagitilabilirController.text =
             ayarlar.varsayilanKesintiler.dagitilabilir.toString();
+        _aiApiUrlController.text = ayarlar.aiApiUrl ?? '';
+        _aiApiKeyController.text = ayarlar.aiApiKey ?? '';
+        _aiModelController.text = ayarlar.aiModel ?? '';
 
         for (final entry in _varsayilanUnvanlar.entries) {
           final value = ayarlar.unvanKatsayilari[entry.key] ?? 1.0;
@@ -135,6 +144,10 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
           dagitilabilir: int.tryParse(_dagitilabilirController.text) ?? 49,
         ),
         unvanKatsayilari: unvanKatsayilari,
+        aiApiUrl: _aiApiUrlController.text.trim().isEmpty ? null : _aiApiUrlController.text.trim(),
+        aiApiKey: _aiApiKeyController.text.trim().isEmpty ? null : _aiApiKeyController.text.trim(),
+        aiModel: _aiModelController.text.trim().isEmpty ? null : _aiModelController.text.trim(),
+        kurulUyeleri: _ayarlar?.kurulUyeleri,
       );
 
       await _service.update(model.toMap());
@@ -290,6 +303,43 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: DSYSTheme.spacingL),
+
+                // Yapay Zeka API Ayarları (AI OCR Fallback)
+                _buildSectionCard(
+                  context,
+                  title: 'Yapay Zeka API Ayarları (Gündem Ayrıştırma Fallback)',
+                  icon: Icons.psychology,
+                  children: [
+                    TextFormField(
+                      controller: _aiApiUrlController,
+                      decoration: const InputDecoration(
+                        labelText: 'API Base URL (Örn: https://api.deepseek.com/v1)',
+                        hintText: 'https://api.deepseek.com/v1',
+                        helperText: 'Boş bırakılırsa varsayılan Gemini API kullanılır.',
+                      ),
+                    ),
+                    const SizedBox(height: DSYSTheme.spacingM),
+                    TextFormField(
+                      controller: _aiApiKeyController,
+                      decoration: const InputDecoration(
+                        labelText: 'API Anahtarı (API Key)',
+                        hintText: 'sk-...',
+                        helperText: 'Boş bırakılırsa varsayılan Gemini API Key kullanılır.',
+                      ),
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: DSYSTheme.spacingM),
+                    TextFormField(
+                      controller: _aiModelController,
+                      decoration: const InputDecoration(
+                        labelText: 'Model Adı (Örn: deepseek-chat, gpt-4o-mini)',
+                        hintText: 'deepseek-chat',
+                      ),
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: DSYSTheme.spacingL),
 
                 // Ünvan Katsayıları
