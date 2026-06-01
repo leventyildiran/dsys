@@ -134,7 +134,10 @@ class _GundemScreenState extends State<GundemScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () => _gundemDetayDialog(context, toplanti, provider),
+        onTap: () {
+          provider.toplantiYukle(toplanti.id);
+          _gundemDetayDialog(context, toplanti, provider);
+        },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -215,69 +218,158 @@ class _GundemScreenState extends State<GundemScreen> {
     ToplantiModel toplanti,
     GundemProvider provider,
   ) {
+    provider.toplantiYukle(toplanti.id);
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Toplantı ${toplanti.toplantiNo}'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: toplanti.gundemMaddeleri.isEmpty
-              ? const Text('Henüz gündem maddesi eklenmemiş.')
-              : ReorderableListView.builder(
-                  shrinkWrap: true,
-                  itemCount: toplanti.gundemMaddeleri.length,
-                  onReorder: (oldIndex, newIndex) {
-                    if (newIndex > oldIndex) newIndex--;
-                    provider.siraDegistir(toplanti.id, oldIndex, newIndex);
-                  },
-                  itemBuilder: (context, index) {
-                    final madde = toplanti.gundemMaddeleri[index];
-                    return ListTile(
-                      key: ValueKey('${madde.siraNo}_${madde.baslik}'),
-                      leading: CircleAvatar(
-                        radius: 14,
-                        child: Text(
-                          '${madde.siraNo}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
+      builder: (ctx) {
+        return Consumer<GundemProvider>(
+          builder: (context, gundemProv, child) {
+            final guncelToplanti = gundemProv.seciliToplanti ?? toplanti;
+            return AlertDialog(
+              title: Text('Toplantı ${guncelToplanti.toplantiNo}'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: guncelToplanti.gundemMaddeleri.isEmpty
+                    ? const Text('Henüz gündem maddesi eklenmemiş.')
+                    : ReorderableListView.builder(
+                        shrinkWrap: true,
+                        itemCount: guncelToplanti.gundemMaddeleri.length,
+                        onReorder: (oldIndex, newIndex) {
+                          if (newIndex > oldIndex) newIndex--;
+                          gundemProv.siraDegistir(guncelToplanti.id, oldIndex, newIndex);
+                        },
+                        itemBuilder: (context, index) {
+                          final madde = guncelToplanti.gundemMaddeleri[index];
+                          return ListTile(
+                            key: ValueKey('${madde.siraNo}_${madde.baslik}'),
+                            leading: CircleAvatar(
+                              radius: 14,
+                              child: Text(
+                                '${madde.siraNo}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                            title: Text(madde.baslik),
+                            subtitle: Text(madde.tur.displayName),
+                            trailing: const Icon(Icons.drag_handle),
+                          );
+                        },
                       ),
-                      title: Text(madde.baslik),
-                      subtitle: Text(madde.tur.displayName),
-                      trailing: const Icon(Icons.drag_handle),
-                    );
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => _yeniMaddeDialog(context, guncelToplanti.id, gundemProv),
+                  child: const Text('Madde Ekle'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    final belge = gundemProv.gundemBelgesiUret();
+                    if (belge != null) {
+                      final bytes = Uint8List.fromList(utf8.encode(belge));
+                      await FileSaver.instance.saveFile(
+                        name: 'gundem_${guncelToplanti.toplantiNo}_${guncelToplanti.toplantiTarihi}',
+                        bytes: bytes,
+                        ext: 'txt',
+                        mimeType: MimeType.text,
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Gündem belgesi indirildi.')),
+                        );
+                      }
+                    }
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  child: const Text('Belge İndir'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Kapat'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _yeniMaddeDialog(
+    BuildContext context,
+    String toplantiId,
+    GundemProvider provider,
+  ) {
+    final baslikController = TextEditingController();
+    final aciklamaController = TextEditingController();
+    final birimAdController = TextEditingController();
+    GundemTuru seciliTur = GundemTuru.diger;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Yeni Gündem Maddesi'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: baslikController,
+                  decoration: const InputDecoration(labelText: 'Gündem Başlığı'),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<GundemTuru>(
+                  value: seciliTur,
+                  decoration: const InputDecoration(labelText: 'Gündem Türü'),
+                  items: GundemTuru.values
+                      .map((t) => DropdownMenuItem(
+                            value: t,
+                            child: Text(t.displayName),
+                          ))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => seciliTur = val);
+                    }
                   },
                 ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              final belge = provider.gundemBelgesiUret();
-              if (belge != null) {
-                // Belgeyi dosya olarak indir
-                final bytes = Uint8List.fromList(utf8.encode(belge));
-                await FileSaver.instance.saveFile(
-                  name:
-                      'gundem_${toplanti.toplantiNo}_${toplanti.toplantiTarihi}',
-                  bytes: bytes,
-                  ext: 'txt',
-                  mimeType: MimeType.text,
+                const SizedBox(height: 8),
+                TextField(
+                  controller: birimAdController,
+                  decoration: const InputDecoration(labelText: 'Birim Adı (Opsiyonel)'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: aciklamaController,
+                  decoration: const InputDecoration(labelText: 'Açıklama (Opsiyonel)'),
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('İptal'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (baslikController.text.isEmpty) return;
+                final yeniMadde = GundemMaddesi(
+                  siraNo: 0,
+                  baslik: baslikController.text,
+                  tur: seciliTur,
+                  aciklama: aciklamaController.text,
+                  birimAd: birimAdController.text,
                 );
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Gündem belgesi indirildi.')),
-                  );
-                }
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Belge İndir'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Kapat'),
-          ),
-        ],
+                await provider.gundemMaddesiEkle(toplantiId, yeniMadde);
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              child: const Text('Ekle'),
+            ),
+          ],
+        ),
       ),
     );
   }
