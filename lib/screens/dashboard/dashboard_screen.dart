@@ -13,11 +13,10 @@ import '../ek_odeme/ek_odeme_screen.dart';
 import '../evrak_arsiv/evrak_arsiv_screen.dart';
 import '../fatura/fatura_screen.dart';
 import '../firma/firma_yonetim_screen.dart';
-import '../gundem/gundem_screen.dart';
 import '../kullanici/kullanici_yonetim_screen.dart';
 import '../personel/personel_yonetim_screen.dart';
 import '../raporlama/raporlama_screen.dart';
-import '../yk_karar/yk_karar_merkezi_screen.dart';
+import '../yk_karar/yk_yonetim_screen.dart';
 
 /// Ana dashboard ekranı.
 ///
@@ -110,8 +109,8 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
         label: 'Diş Hekimliği',
       ),
       const _NavItem(
-        icon: Icons.event_note_rounded,
-        label: 'Gündem',
+        icon: Icons.gavel_rounded,
+        label: 'Yürütme Kurulu',
       ),
       const _NavItem(
         icon: Icons.analytics_rounded,
@@ -132,10 +131,6 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       const _NavItem(
         icon: Icons.store_rounded,
         label: 'Firmalar',
-      ),
-      const _NavItem(
-        icon: Icons.gavel_rounded,
-        label: 'YK Karar Merkezi',
       ),
     ];
 
@@ -235,7 +230,7 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 3:
         return const DisHekimligiScreen(embedded: true);
       case 4:
-        return const GundemScreen(embedded: true);
+        return const YkYonetimScreen();
       case 5:
         return const RaporlamaScreen(embedded: true);
       case 6:
@@ -247,12 +242,10 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 9:
         return const FirmaYonetimScreen();
       case 10:
-        return const YkKararMerkeziScreen(embedded: true);
-      case 11:
         return const KullaniciYonetimScreen();
-      case 12:
+      case 11:
         return const BirimYonetimScreen();
-      case 13:
+      case 12:
         return const SistemAyarlariScreen();
       default:
         assert(false, 'Geçersiz navigasyon index: $_selectedIndex');
