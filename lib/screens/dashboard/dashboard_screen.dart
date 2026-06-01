@@ -7,7 +7,6 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/user_provider.dart';
 import '../ayarlar/sistem_ayarlari_screen.dart';
 import '../birim/birim_yonetim_screen.dart';
-import '../butce_aktarim/butce_aktarim_screen.dart';
 import '../danismanlik/danismanlik_yonetim_screen.dart';
 import '../dis_hekimligi/dis_hekimligi_screen.dart';
 import '../ek_odeme/ek_odeme_screen.dart';
@@ -101,11 +100,6 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       const _NavItem(
         icon: Icons.handshake_rounded,
         label: 'Danışmanlıklar',
-      ),
-
-      const _NavItem(
-        icon: Icons.swap_horiz_rounded,
-        label: 'Bütçe Aktarım',
       ),
       const _NavItem(
         icon: Icons.payments_rounded,
@@ -237,30 +231,28 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 1:
         return const DanismanlikYonetimScreen();
       case 2:
-        return const ButceAktarimScreen(embedded: true);
-      case 3:
         return const EkOdemeScreen(embedded: true);
-      case 4:
+      case 3:
         return const DisHekimligiScreen(embedded: true);
-      case 5:
+      case 4:
         return const GundemScreen(embedded: true);
-      case 6:
+      case 5:
         return const RaporlamaScreen(embedded: true);
-      case 7:
+      case 6:
         return const EvrakArsivScreen(embedded: true);
-      case 8:
+      case 7:
         return const FaturaScreen(embedded: true);
-      case 9:
+      case 8:
         return const PersonelYonetimScreen();
-      case 10:
+      case 9:
         return const FirmaYonetimScreen();
-      case 11:
+      case 10:
         return const YkKararMerkeziScreen(embedded: true);
-      case 12:
+      case 11:
         return const KullaniciYonetimScreen();
-      case 13:
+      case 12:
         return const BirimYonetimScreen();
-      case 14:
+      case 13:
         return const SistemAyarlariScreen();
       default:
         assert(false, 'Geçersiz navigasyon index: $_selectedIndex');
