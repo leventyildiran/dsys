@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
-import 'package:google_generative_ai/generate_content.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
@@ -113,14 +112,17 @@ class GundemParserService {
       
       return YkKararModel(
         id: '',
-        toplantiId: '', // Havuza düşmesi için boş
+        toplantiId: '',
         toplantiNo: '',
-        kararNo: '', // Toplantı sonrası atanacak
+        kararNo: '',
         baslik: baslik,
         kararMetni: icerik,
         birimAd: birimAd,
-        tur: YkKararTuru.diger, // Varsayılan, daha sonra YK değiştirebilir
-        durum: YkKararDurum.taslak, // İnceleme için taslak olarak düşer
+        birimId: '', // Varsayılan boş
+        iliskiliKayitId: '', // Varsayılan boş
+        kararTarihi: DateTime.now().toIso8601String().split('T')[0], // Bugünün tarihi
+        tur: YkKararTuru.diger,
+        durum: YkKararDurum.taslak,
         olusturmaTarihi: DateTime.now(),
       );
     } catch (e) {
@@ -176,6 +178,9 @@ $maddeText
         baslik: baslik,
         kararMetni: metin,
         birimAd: birim,
+        birimId: '', // Varsayılan boş
+        iliskiliKayitId: '', // Varsayılan boş
+        kararTarihi: DateTime.now().toIso8601String().split('T')[0], // Bugünün tarihi
         tur: YkKararTuru.diger,
         durum: YkKararDurum.taslak,
         olusturmaTarihi: DateTime.now(),

@@ -486,7 +486,7 @@ class _YkKararMerkeziScreenState extends State<YkKararMerkeziScreen> {
   }
 
   Future<void> _pdfGundemIceriAktar(BuildContext context, YkKararProvider provider) async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
       withData: true,

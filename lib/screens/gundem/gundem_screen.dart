@@ -228,8 +228,9 @@ class _GundemScreenState extends State<GundemScreen> {
             final guncelToplanti = gundemProv.seciliToplanti ?? toplanti;
             return AlertDialog(
               title: Text('Toplantı ${guncelToplanti.toplantiNo}'),
-              content: SizedBox(
+              content: Container(
                 width: double.maxFinite,
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
                 child: guncelToplanti.gundemMaddeleri.isEmpty
                     ? const Text('Henüz gündem maddesi eklenmemiş.')
                     : ReorderableListView.builder(
