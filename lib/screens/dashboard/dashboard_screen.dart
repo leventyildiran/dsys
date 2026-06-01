@@ -19,6 +19,7 @@ import '../gundem/gundem_screen.dart';
 import '../kullanici/kullanici_yonetim_screen.dart';
 import '../personel/personel_yonetim_screen.dart';
 import '../raporlama/raporlama_screen.dart';
+import '../yk_karar/yk_karar_merkezi_screen.dart';
 
 /// Ana dashboard ekranı.
 ///
@@ -142,6 +143,10 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
         icon: Icons.store_rounded,
         label: 'Firmalar',
       ),
+      const _NavItem(
+        icon: Icons.gavel_rounded,
+        label: 'YK Karar Merkezi',
+      ),
     ];
 
     // Rol bazlı menü öğeleri
@@ -256,10 +261,12 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 11:
         return const FirmaYonetimScreen();
       case 12:
-        return const KullaniciYonetimScreen();
+        return const YkKararMerkeziScreen(embedded: true);
       case 13:
-        return const BirimYonetimScreen();
+        return const KullaniciYonetimScreen();
       case 14:
+        return const BirimYonetimScreen();
+      case 15:
         return const SistemAyarlariScreen();
       default:
         assert(false, 'Geçersiz navigasyon index: $_selectedIndex');

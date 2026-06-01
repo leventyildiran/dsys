@@ -11,6 +11,9 @@ import 'data_service.dart';
 import 'gorevli_personel_service.dart';
 import 'personel_hakedis_service.dart';
 import 'taksit_service.dart';
+import 'yk_karar_service.dart';
+import '../core/karar_metni_servisi.dart';
+import '../models/yk_karar_model.dart';
 
 /// Taksit onay → dağıtım hesaplama → EYDMA tavan kontrolü → Firestore yazma
 /// pipeline'ını orkestre eden servis.
@@ -24,6 +27,7 @@ class TaksitOnayServisi {
     PersonelHakedisService? personelHakedisService,
     DanismanlikService? danismanlikService,
     SistemAyarlariService? sistemAyarlariService,
+    YkKararService? ykKararService,
   })  : _taksitService = taksitService ?? TaksitService(),
         _dagitimService = dagitimService ?? DagitimService(),
         _gorevliPersonelService =
@@ -32,7 +36,8 @@ class TaksitOnayServisi {
             personelHakedisService ?? PersonelHakedisService(),
         _danismanlikService = danismanlikService ?? DanismanlikService(),
         _sistemAyarlariService =
-            sistemAyarlariService ?? SistemAyarlariService();
+            sistemAyarlariService ?? SistemAyarlariService(),
+        _ykKararService = ykKararService ?? YkKararService();
 
   final TaksitService _taksitService;
   final DagitimService _dagitimService;
@@ -40,6 +45,7 @@ class TaksitOnayServisi {
   final PersonelHakedisService _personelHakedisService;
   final DanismanlikService _danismanlikService;
   final SistemAyarlariService _sistemAyarlariService;
+  final YkKararService _ykKararService;
 
   // ─────────────────────────────────────────────────────────────
   // 1. DURUM GEÇİŞİ
@@ -241,6 +247,55 @@ class TaksitOnayServisi {
           donem,
           odenecek,
         );
+      }
+
+      // 14. Otomatik YK Taslak Kararı Oluştur
+      try {
+        final isStandart = danismanlik.danismanlikTuru == DanismanlikTuru.standart;
+        final ilkGorevli = gorevliler.first;
+        
+        final hamKararVerileri = {
+          'BIRIM_AD': danismanlik.birimId,
+          'BIRIM_EVRAK_TARIHI': taksit.birimEvrakTarihi ?? '',
+          'BIRIM_EVRAK_SAYISI': taksit.birimEvrakSayisi ?? '',
+          'BIRIM_KURUL_TARIHI': taksit.birimKurulTarihi ?? '',
+          'BIRIM_TOPLANTI_SAYI': taksit.birimToplantiSayisi ?? '',
+          'BIRIM_KARAR_NO': taksit.birimKararNo ?? '',
+          'YK_KARAR_TARIHI': danismanlik.ykKararTarihi ?? '',
+          'YK_KARAR_NO': danismanlik.ykKararNo ?? '',
+          'FIRMA_UNVAN': danismanlik.firmaId,
+          'ISIN_KONUSU': danismanlik.konusu,
+          'DANISMANLIK_SURESI': danismanlik.suresi,
+          'HOCA_UNVAN': ilkGorevli.unvan,
+          'HOCA_AD_SOYAD': ilkGorevli.adSoyad,
+          'KATSAYI': katsayi,
+        };
+
+        final formatliKararVerileri = KararMetniServisi.bicimlendir(hamKararVerileri);
+        final kararMetni = KararMetniServisi.metinUret(
+          isStandart: isStandart,
+          veriler: formatliKararVerileri,
+        );
+
+        final ykKarar = YkKararModel(
+          id: '',
+          toplantiId: '',
+          toplantiNo: '',
+          kararNo: '',
+          kararTarihi: '',
+          birimId: danismanlik.birimId,
+          birimAd: danismanlik.birimId,
+          tur: YkKararTuru.danismanlik,
+          baslik: '${ilkGorevli.unvan} ${ilkGorevli.adSoyad} Danışmanlık Taksit Ödemesi (Ay ${taksit.ayNo})',
+          kararMetni: kararMetni,
+          iliskiliKayitId: taksitId,
+          olusturmaTarihi: DateTime.now(),
+          durum: YkKararDurum.taslak,
+        );
+        
+        await _ykKararService.create(ykKarar);
+      } catch (e) {
+        debugPrint('[TaksitOnayServisi.dagitimHesaplaVeKaydet] YK Kararı oluşturulurken hata: $e');
       }
 
       return DagitimSonuc(

@@ -14,6 +14,7 @@ import 'screens/login_screen.dart';
 import 'screens/raporlama/raporlama_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/taksit/taksit_onay_screen.dart';
+import 'screens/yk_karar/yk_karar_merkezi_screen.dart';
 
 /// DSYS uygulama yönlendirici yapılandırması.
 ///
@@ -113,6 +114,11 @@ class AppRouter {
         GoRoute(
           path: '/butce-takip',
           builder: (context, state) => const ButceTakipScreen(),
+        ),
+        // YK Karar Merkezi
+        GoRoute(
+          path: '/yk-karar',
+          builder: (context, state) => const YkKararMerkeziScreen(),
         ),
       ],
     );

@@ -19,6 +19,7 @@ import 'providers/gundem_provider.dart';
 import 'providers/raporlama_provider.dart';
 import 'providers/taksit_provider.dart';
 import 'providers/user_provider.dart';
+import 'providers/yk_karar_provider.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -71,6 +72,7 @@ class _DSYSAppState extends State<DSYSApp> {
   late final EvrakArsivProvider _evrakArsivProvider;
   late final FaturaProvider _faturaProvider;
   late final ButceTakipProvider _butceTakipProvider;
+  late final YkKararProvider _ykKararProvider;
   late final GoRouter _router;
 
   @override
@@ -88,11 +90,13 @@ class _DSYSAppState extends State<DSYSApp> {
     _evrakArsivProvider = EvrakArsivProvider();
     _faturaProvider = FaturaProvider();
     _butceTakipProvider = ButceTakipProvider();
+    _ykKararProvider = YkKararProvider();
     _router = AppRouter.router(_authProvider);
   }
 
   @override
   void dispose() {
+    _ykKararProvider.dispose();
     _butceTakipProvider.dispose();
     _faturaProvider.dispose();
     _evrakArsivProvider.dispose();
@@ -125,6 +129,7 @@ class _DSYSAppState extends State<DSYSApp> {
         ChangeNotifierProvider.value(value: _evrakArsivProvider),
         ChangeNotifierProvider.value(value: _faturaProvider),
         ChangeNotifierProvider.value(value: _butceTakipProvider),
+        ChangeNotifierProvider.value(value: _ykKararProvider),
       ],
       child: MaterialApp.router(
         title: 'DSYS - Döner Sermaye Yönetim Sistemi',

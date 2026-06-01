@@ -2,15 +2,18 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/butce_aktarim_model.dart';
+import '../models/yk_karar_model.dart';
 import '../services/butce_aktarim_service.dart';
+import '../services/yk_karar_service.dart';
 
 /// Bütçe aktarımları state yönetimi.
 class ButceAktarimProvider extends ChangeNotifier {
-  ButceAktarimProvider({ButceAktarimService? service})
-      : _service = service ?? ButceAktarimService();
+  ButceAktarimProvider({ButceAktarimService? service, YkKararService? ykKararService})
+      : _service = service ?? ButceAktarimService(),
+        _ykKararService = ykKararService ?? YkKararService();
 
   final ButceAktarimService _service;
-
+  final YkKararService _ykKararService;
   List<ButceAktarimModel> _aktarimlar = [];
   List<ButceAktarimModel> get aktarimlar => _aktarimlar;
 
@@ -73,7 +76,31 @@ class ButceAktarimProvider extends ChangeNotifier {
   /// Yeni aktarım oluşturur.
   Future<bool> aktarimOlustur(ButceAktarimModel model) async {
     try {
-      await _service.create(model);
+      final newId = await _service.create(model);
+      
+      // Otomatik YK Taslak Kararı Oluştur
+      try {
+        final ykKarar = YkKararModel(
+          id: '',
+          toplantiId: '',
+          toplantiNo: '',
+          kararNo: '',
+          kararTarihi: '',
+          birimId: model.birimId,
+          birimAd: model.birimAd,
+          tur: YkKararTuru.butceAktarim,
+          baslik: '${model.birimAd} Bütçe Aktarım Kararı (Karar No: ${model.kararNo})',
+          kararMetni: 'Üniversitemiz ${model.birimAd} Müdürlüğü’nün bütçe kalemleri arasında aktarım yapılması talebine ilişkin kurul kararı doğrultusunda; ${model.birimAd} bütçesinden artırılan ve eksiltilen bütçe kalemleri tablosuna istinaden bütçe aktarımının gerçekleştirilmesine ve kararının Yürütme Kurulu\'nca onaylanmasına karar verilmiştir.\n\nGerekçe: ${model.gerekce ?? ""}',
+          iliskiliKayitId: newId,
+          olusturmaTarihi: DateTime.now(),
+          durum: YkKararDurum.taslak,
+        );
+        
+        await _ykKararService.create(ykKarar);
+      } catch (e) {
+        debugPrint('[ButceAktarimProvider.aktarimOlustur] YK Kararı oluşturulurken hata: $e');
+      }
+
       _basariMesaji = 'Bütçe aktarımı başarıyla oluşturuldu.';
       await aktarimlariYukle();
       return true;

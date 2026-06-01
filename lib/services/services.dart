@@ -17,3 +17,4 @@ export 'raporlama_service.dart';
 export 'taksit_onay_servisi.dart';
 export 'taksit_service.dart';
 export 'user_service.dart';
+export 'yk_karar_service.dart';
