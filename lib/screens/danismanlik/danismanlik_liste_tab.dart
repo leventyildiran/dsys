@@ -6,20 +6,20 @@ import '../../models/danismanlik_model.dart';
 import '../../providers/user_provider.dart';
 import '../../services/data_service.dart';
 import '../../theme.dart';
-import 'danismanlik_form_screen.dart';
+
 
 /// Danışmanlık listesi ekranı.
 ///
 /// Dashboard'daki "Danışmanlıklar" sekmesinde gösterilir.
 /// Durum filtreleri ve yeni danışmanlık ekleme butonu içerir.
-class DanismanlikListeScreen extends StatefulWidget {
-  const DanismanlikListeScreen({super.key});
+class DanismanlikListeTab extends StatefulWidget {
+  const DanismanlikListeTab({super.key});
 
   @override
-  State<DanismanlikListeScreen> createState() => _DanismanlikListeScreenState();
+  State<DanismanlikListeTab> createState() => _DanismanlikListeTabState();
 }
 
-class _DanismanlikListeScreenState extends State<DanismanlikListeScreen> {
+class _DanismanlikListeTabState extends State<DanismanlikListeTab> {
   DanismanlikDurum? _seciliDurum;
   final DanismanlikService _danismanlikService = DanismanlikService();
 
@@ -57,14 +57,7 @@ class _DanismanlikListeScreenState extends State<DanismanlikListeScreen> {
               ),
               FilledButton.icon(
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => Scaffold(
-                        appBar: AppBar(title: const Text('Yeni Taksit')),
-                        body: const DanismanlikFormScreen(),
-                      ),
-                    ),
-                  );
+                  DefaultTabController.of(context).animateTo(2);
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Yeni Danışmanlık'),

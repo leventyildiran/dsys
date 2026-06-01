@@ -8,8 +8,7 @@ import '../../providers/user_provider.dart';
 import '../ayarlar/sistem_ayarlari_screen.dart';
 import '../birim/birim_yonetim_screen.dart';
 import '../butce_aktarim/butce_aktarim_screen.dart';
-import '../danismanlik/danismanlik_form_screen.dart';
-import '../danismanlik/danismanlik_liste_screen.dart';
+import '../danismanlik/danismanlik_yonetim_screen.dart';
 import '../dis_hekimligi/dis_hekimligi_screen.dart';
 import '../ek_odeme/ek_odeme_screen.dart';
 import '../evrak_arsiv/evrak_arsiv_screen.dart';
@@ -103,10 +102,7 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
         icon: Icons.handshake_rounded,
         label: 'Danışmanlıklar',
       ),
-      const _NavItem(
-        icon: Icons.receipt_long_rounded,
-        label: 'Yeni Danışmanlık',
-      ),
+
       const _NavItem(
         icon: Icons.swap_horiz_rounded,
         label: 'Bütçe Aktarım',
@@ -239,34 +235,32 @@ class _DashboardLayoutState extends State<_DashboardLayout> {
       case 0:
         return _OverviewPanel(user: widget.user);
       case 1:
-        return const DanismanlikListeScreen();
+        return const DanismanlikYonetimScreen();
       case 2:
-        return const DanismanlikFormScreen();
-      case 3:
         return const ButceAktarimScreen(embedded: true);
-      case 4:
+      case 3:
         return const EkOdemeScreen(embedded: true);
-      case 5:
+      case 4:
         return const DisHekimligiScreen(embedded: true);
-      case 6:
+      case 5:
         return const GundemScreen(embedded: true);
-      case 7:
+      case 6:
         return const RaporlamaScreen(embedded: true);
-      case 8:
+      case 7:
         return const EvrakArsivScreen(embedded: true);
-      case 9:
+      case 8:
         return const FaturaScreen(embedded: true);
-      case 10:
+      case 9:
         return const PersonelYonetimScreen();
-      case 11:
+      case 10:
         return const FirmaYonetimScreen();
-      case 12:
+      case 11:
         return const YkKararMerkeziScreen(embedded: true);
-      case 13:
+      case 12:
         return const KullaniciYonetimScreen();
-      case 14:
+      case 13:
         return const BirimYonetimScreen();
-      case 15:
+      case 14:
         return const SistemAyarlariScreen();
       default:
         assert(false, 'Geçersiz navigasyon index: $_selectedIndex');

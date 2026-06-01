@@ -14,8 +14,8 @@ import '../../theme.dart';
 /// Danışmanlık taksit formu + canlı önizleme ekranı.
 ///
 /// Web'de yan yana (form | önizleme), mobilde sekmeli görünüm.
-class DanismanlikFormScreen extends StatelessWidget {
-  const DanismanlikFormScreen({super.key});
+class DanismanlikFormTab extends StatelessWidget {
+  const DanismanlikFormTab({super.key});
 
   @override
   Widget build(BuildContext context) {
