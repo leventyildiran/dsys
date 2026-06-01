@@ -244,7 +244,7 @@ class _ButceTakipScreenState extends State<ButceTakipScreen>
           Text('Birim Bazlı Ödenek Durumu',
               style: theme.textTheme.titleMedium),
           const SizedBox(height: 12),
-          ...provider.limitler.map((limit) => _buildBirimOzetKart(limit, theme)),
+          ...provider.limitler.map((limit) => _buildBirimOzetKart(limit, provider, theme)),
         ],
       ),
     );
@@ -280,7 +280,7 @@ class _ButceTakipScreenState extends State<ButceTakipScreen>
     );
   }
 
-  Widget _buildBirimOzetKart(ButceLimitModel limit, ThemeData theme) {
+  Widget _buildBirimOzetKart(ButceLimitModel limit, ButceTakipProvider provider, ThemeData theme) {
     final oran = limit.kullanimOrani;
     final renkKodu = oran > 1.0
         ? Colors.red

@@ -26,30 +26,30 @@ class DisHekimligiService {
       debugPrint('[DisHekimligiService.getAll] Hata: $e');
       return [];
     }
+  }
 
-    Future<PaginatedResult<DisHekimligiDagitimModel,
-        QueryDocumentSnapshot<Map<String, dynamic>>>> getPage({
-      int limit = 20,
-      QueryDocumentSnapshot<Map<String, dynamic>>? startAfterDocument,
-    }) async {
-      try {
-        final page = await _service.getPage(
-          _collection,
-          limit: limit,
-          startAfterDocument: startAfterDocument,
-          queryBuilder: (ref) => ref.orderBy('olusturmaTarihi', descending: true),
-        );
-        return PaginatedResult(
-          items: page.docs
-              .map((doc) => DisHekimligiDagitimModel.fromMap(doc.id, doc.data()))
-              .toList(),
-          hasMore: page.hasMore,
-          nextCursor: page.lastDocument,
-        );
-      } catch (e) {
-        debugPrint('[DisHekimligiService.getPage] Hata: $e');
-        return const PaginatedResult(items: [], hasMore: false);
-      }
+  Future<PaginatedResult<DisHekimligiDagitimModel,
+      QueryDocumentSnapshot<Map<String, dynamic>>>> getPage({
+    int limit = 20,
+    QueryDocumentSnapshot<Map<String, dynamic>>? startAfterDocument,
+  }) async {
+    try {
+      final page = await _service.getPage(
+        _collection,
+        limit: limit,
+        startAfterDocument: startAfterDocument,
+        queryBuilder: (ref) => ref.orderBy('olusturmaTarihi', descending: true),
+      );
+      return PaginatedResult(
+        items: page.docs
+            .map((doc) => DisHekimligiDagitimModel.fromMap(doc.id, doc.data()))
+            .toList(),
+        hasMore: page.hasMore,
+        nextCursor: page.lastDocument,
+      );
+    } catch (e) {
+      debugPrint('[DisHekimligiService.getPage] Hata: $e');
+      return const PaginatedResult(items: [], hasMore: false);
     }
   }
 

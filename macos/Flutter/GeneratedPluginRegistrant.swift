@@ -9,6 +9,8 @@ import cloud_firestore
 import file_saver
 import firebase_auth
 import firebase_core
+import firebase_crashlytics
+import firebase_storage
 import printing
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
@@ -16,5 +18,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FileSaverPlugin.register(with: registry.registrar(forPlugin: "FileSaverPlugin"))
   FLTFirebaseAuthPlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseAuthPlugin"))
   FLTFirebaseCorePlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseCorePlugin"))
+  FLTFirebaseCrashlyticsPlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseCrashlyticsPlugin"))
+  FLTFirebaseStoragePlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseStoragePlugin"))
   PrintingPlugin.register(with: registry.registrar(forPlugin: "PrintingPlugin"))
 }
