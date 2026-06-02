@@ -407,15 +407,28 @@ Genel Bilgiler (Belgeden Çıkarılacak):
 - BIRIM_TOPLANTI_SAYI: Birimin kendi kurul toplantı sayısı (Örn: 04)
 
 Kararlar:
-Metnin içinde geçen her bir karar için ayrı bir Yürütme Kurulu kararı oluştur.
-Eğer karar bir Danışmanlık/Ek Ödeme/Katkı Payı kararı ise ŞABLON A'yı doldur.
-Eğer karar 2547 Sayılı Kanun'un 58. maddesinin (k) fıkrası kapsamında bir sanayi işbirliği danışmanlığı ise ŞABLON B'yi doldur.
+Metnin içinde geçen her bir karar için ayrı bir Yürütme Kurulu kararı oluştur. Kararın konusuna göre aşağıdaki ŞABLONLARDAN en uygun olanını seçip değişkenleri yerleştir:
 
-ŞABLON A (Standart Danışmanlık / Ek Ödeme):
+ŞABLON 1 (Danışmanlık / Gelir Getirici Faaliyet Dağıtımı):
 "Üniversitemiz {BIRIM_AD} Müdürlüğü’nün {BIRIM_EVRAK_TARIHI} tarih ve {BIRIM_EVRAK_SAYISI} sayılı yazısı ile {BIRIM_KURUL_TARIHI} tarih, {BIRIM_TOPLANTI_SAYI} toplantı sayılı ve {BIRIM_KARAR_NO} numaralı kararına istinaden; Döner Sermaye Yürütme Kurulu’nun {YK_KARAR_TARIHI} tarih ve {YK_KARAR_NO} sayılı kararı ile {FIRMA_UNVAN}’nin talep ettiği “{ISIN_KONUSU}” kapsamında {DANISMANLIK_SURESI} ay süreyle Danışmanlık Hizmeti için görevlendirilen {HOCA_UNVAN} {HOCA_AD_SOYAD} tarafından verilen danışmanlık hizmetine istinaden elde edilen gelirden ayrılan katkı payından aşağıdaki gelir getirici faaliyet cetveli doğrultusunda, dönem ek ödeme katsayısının {KATSAYI} şeklinde belirlenmesi ve elde edilen puanlara göre hesaplanacak katkı payı dağıtımının gerçekleştirilmesine;"
 
-ŞABLON B (58/k Teknik Danışmanlık):
-"Üniversitemiz Yönetim Kurulunun {UYK_KARAR_TARIHI} tarih, {UYK_TOPLANTI_SAYI} toplantı sayılı, {UYK_KARAR_NO} numaralı kararıyla 2547 Sayılı Yükseköğretim Kanunun 58. maddesinin (k) fıkrası kapsamında {FIRMA_UNVAN} ye teknik danışmanlık hizmeti vermek üzere görevlendirilen {HOCA_UNVAN} {HOCA_AD_SOYAD} tarafından {HIZMET_BASLANGIC_TARIHI}-{HIZMET_BITIS_TARIHI} ({DANISMANLIK_SURESI} Aylık) tarihleri arasında gerçekleştirilen hizmet için elde edilen {GELIR_TUTARI} TL gelirden ayrılan {KATKI_PAYI_TUTARI} TL katkı payının adı geçen öğretim üyesine tahakkuk ettirilmesine;"
+ŞABLON 2 (58/k Teknik Danışmanlık / Rapor Tahakkuk Ödemesi):
+"Üniversitemiz Yönetim Kurulunun (veya Yürütme Kurulunun) {UYK_KARAR_TARIHI} tarih, {UYK_TOPLANTI_SAYI} toplantı sayılı, {UYK_KARAR_NO} numaralı kararıyla 2547 Sayılı Yükseköğretim Kanununun 58. maddesinin (k) fıkrası kapsamında {FIRMA_UNVAN} ye teknik danışmanlık/rapor hazırlama hizmeti vermek üzere görevlendirilen {HOCA_UNVAN} {HOCA_AD_SOYAD} tarafından {HIZMET_TARIHI} tarihinde (veya {HIZMET_BASLANGIC_TARIHI}-{HIZMET_BITIS_TARIHI} arasında) gerçekleştirilen hizmet için elde edilen {GELIR_TUTARI} TL gelirden ayrılan {KATKI_PAYI_TUTARI} TL katkı payının adı geçen öğretim üyesine tahakkuk ettirilmesine;"
+
+ŞABLON 3 (Bütçe Aktarımı):
+"Üniversitemiz {BIRIM_AD} Müdürlüğü’nün {BIRIM_EVRAK_TARIHI} tarih ve {BIRIM_EVRAK_SAYISI} sayılı yazısına istinaden; bütçesinden ihtiyaç duyulan giderlerin gerçekleştirilmesi için aşağıda belirtildiği şekilde bölümiçi/bölümlerarası bütçe aktarma işleminin yapılmasının uygunluğuna;"
+(Bu şablon ile birlikte mutlaka Artırılan/Eksiltilen sütunlarını içeren bütçe aktarım tablosunu Markdown formatında oluştur).
+
+ŞABLON 4 (Kurs / Eğitim Ders Saati Katsayı Dağıtımı):
+"Üniversitemiz {BIRIM_AD} Müdürlüğü’ nün {BIRIM_EVRAK_TARIHI} tarih, {BIRIM_EVRAK_SAYISI} sayılı yazısıyla gönderilen, {BIRIM_KURUL_TARIHI} tarih, {BIRIM_TOPLANTI_SAYI} toplantı sayılı ve {BIRIM_KARAR_NO} numaralı Yönetim Kurulu Kararıyla teklif edilen; ilgili Müdürlük tarafından yürütülen “{KURS_ADI}” (Örn: Yabancılara Türkçe Öğretiminde Kültür Aktarımı) dersi/kursu için {DONEM} döneminde elde edilen gelirden ayrılan katkı payından, aşağıdaki gelir getirici faaliyet cetveline göre katkısı bulunan Öğretim Elemanına dağıtılmasına ve ek ödeme katsayısının {KATSAYI} TL (Örn: 20,25 TL veya 14,10 TL) olarak belirlenmesine;"
+(Bu şablondan sonra Adı Soyadı, Puanı, Unvan Katsayısı, Ders Saati, Toplam Puan içeren ders saati hakediş tablosunu Markdown olarak ekle).
+
+ŞABLON 5 (Ağız ve Diş Sağlığı / Diş Hekimliği Ek Ödemeleri - 2547/58):
+"Üniversitemiz Ağız ve Diş Sağlığı Uygulama ve Araştırma Merkez Müdürlüğü’nün {BIRIM_EVRAK_TARIHI} tarih ve {BIRIM_EVRAK_SAYISI} sayılı yazısı ile gönderilen; {UYK_KARAR_TARIHI} tarih, {UYK_TOPLANTI_SAYI} toplantı sayılı ve {UYK_KARAR_NO} numaralı Diş Hekimliği Fakültesi Yönetim Kurulu Kararı ile teklif edilen; döner sermaye gelirleri bakiyesinden {DONEM} dönemi için; Ağız ve Diş Sağlığı Uygulama ve Araştırma Merkezinde görevli akademik ve idari personellere dağıtılacak ek ödeme, yönetici payı ve mesai dışı ücretli tedavi ödemesinin 2547 sayılı Kanunun 58. maddesi ile ilgili yönetmelik hükümleri çerçevesinde aşağıda gösterilen tutarlar doğrultusunda dağıtılmasının uygunluğuna;"
+(Bu şablondan sonra Katkı Payı Ödemesi, Personel Bilgisi, Dağıtılacak Toplam Tutar içeren ek ödeme tablosunu Markdown olarak ekle).
+
+ŞABLON 6 (Fiyat Tarifesi / Kurs Ücreti Belirleme):
+"Üniversitemiz {BIRIM_AD} Müdürlüğü’ nün {BIRIM_EVRAK_TARIHI} tarih, {BIRIM_EVRAK_SAYISI} sayılı yazısıyla gönderilen, {BIRIM_KURUL_TARIHI} tarih, {BIRIM_TOPLANTI_SAYI} toplantı sayılı ve {BIRIM_KARAR_NO} numaralı Yönetim Kurulu Kararıyla teklif edilen; ilgili Merkez bünyesinde verilmesi planlanan “{KURS_VEYA_ANALIZ_ADI}” (Örn: İHA-1 Ticari İnsansız Hava Aracı Kursu veya Analiz Testleri) ücretinin {TUTAR} TL (KDV Dahil/Hariç belirtilecek şekilde) olarak belirlenmesi ve eğitim/analiz programının ilgili Merkez Müdürlüğü uhdesinde yürütülmesi hususlarının uygunluğuna;"
 
 Kurallar:
 - {YK_KARAR_TARIHI} değerini "$toplantiTarihi" yap.
