@@ -338,6 +338,98 @@ class GundemParserService {
     throw Exception('Beklenmedik AI yönlendirme hatası.');
   }
 
+  /// Hazır extractor servisinden kararları almaya çalışır.
+  /// Başarısız olursa boş liste döner ve mevcut script/AI fallback akışı devam eder.
+  Future<List<YkKararModel>> _hariciExtractorIleAyristir({
+    required String pdfText,
+    required String toplantiId,
+    required String toplantiNo,
+    required String toplantiTarihi,
+  }) async {
+    try {
+      final ayarlar = await SistemAyarlariService().get();
+      if (ayarlar == null || !ayarlar.hasActiveExtractor) {
+        return const [];
+      }
+
+      final url = ayarlar.extractorApiUrl!.trim();
+      final headers = <String, String>{
+        'Content-Type': 'application/json; charset=utf-8',
+      };
+
+      final apiKey = ayarlar.extractorApiKey?.trim() ?? '';
+      if (apiKey.isNotEmpty) {
+        headers['Authorization'] = apiKey.startsWith('Bearer ')
+            ? apiKey
+            : 'Bearer $apiKey';
+      }
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode({
+          'task': 'yk_karar_extract',
+          'provider': ayarlar.extractorProvider,
+          'toplantiId': toplantiId,
+          'toplantiNo': toplantiNo,
+          'toplantiTarihi': toplantiTarihi,
+          'pdfText': pdfText,
+        }),
+      );
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Extractor API hatası: ${response.statusCode}');
+      }
+
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      List<dynamic> rawList;
+      if (decoded is List) {
+        rawList = decoded;
+      } else if (decoded is Map<String, dynamic> && decoded['kararlar'] is List) {
+        rawList = decoded['kararlar'] as List<dynamic>;
+      } else {
+        throw Exception('Extractor çıktısı beklenen formatta değil.');
+      }
+
+      final listKarar = <YkKararModel>[];
+      for (final item in rawList) {
+        if (item is! Map) continue;
+        final map = Map<String, dynamic>.from(item as Map);
+        final strTur = map['tur']?.toString() ?? 'diger';
+
+        listKarar.add(YkKararModel(
+          id: '',
+          toplantiId: toplantiId,
+          toplantiNo: toplantiNo,
+          kararNo: '',
+          baslik: map['baslik']?.toString() ?? 'Birim Kararı',
+          kararMetni: map['kararMetni']?.toString() ?? '',
+          birimAd: map['birimAd']?.toString() ?? 'Bilinmeyen Birim',
+          birimId: map['birimId']?.toString() ?? '',
+          iliskiliKayitId: map['iliskiliKayitId']?.toString() ?? '',
+          kararTarihi: toplantiTarihi,
+          tur: _mapExtractorTur(strTur),
+          durum: YkKararDurum.taslak,
+          olusturmaTarihi: DateTime.now(),
+        ));
+      }
+
+      return listKarar;
+    } catch (e) {
+      debugPrint('[GundemParserService._hariciExtractorIleAyristir] Hata: $e');
+      return const [];
+    }
+  }
+
+  YkKararTuru _mapExtractorTur(String raw) {
+    final normalized = raw.toLowerCase().replaceAll('_', '');
+    if (normalized == 'danismanlik') return YkKararTuru.danismanlik;
+    if (normalized == 'butceaktarim') return YkKararTuru.butceAktarim;
+    if (normalized == 'ekodeme') return YkKararTuru.ekOdeme;
+    if (normalized == 'dishekimligi') return YkKararTuru.disHekimligi;
+    return YkKararTuru.diger;
+  }
+
   /// Kural tabanlı script başarısız olursa tek maddeyi AI aracılığıyla çözümler.
   Future<YkKararModel?> _aiIleAyristir(String maddeText) async {
     try {
@@ -539,6 +631,45 @@ $pdfText
       
       final kararlar = <YkKararModel>[];
       final gundemMaddeleri = <GundemMaddesi>[];
+
+      // 2.a Önce hazır extractor dene (entegrasyon aktifse)
+      final hariciKararlar = await _hariciExtractorIleAyristir(
+        pdfText: sanitizedMetin,
+        toplantiId: toplantiId,
+        toplantiNo: toplantiNo,
+        toplantiTarihi: toplantiTarihi,
+      );
+
+      if (hariciKararlar.isNotEmpty) {
+        for (int i = 0; i < hariciKararlar.length; i++) {
+          final k = hariciKararlar[i];
+          final yeniKararNo = await _ykService.sonrakiKararNoUret(toplantiNo);
+          final finalKarar = k.copyWith(
+            toplantiId: toplantiId,
+            toplantiNo: toplantiNo,
+            kararNo: yeniKararNo,
+            kararTarihi: toplantiTarihi,
+            durum: YkKararDurum.taslak,
+            olusturmaTarihi: DateTime.now(),
+          );
+
+          kararlar.add(finalKarar);
+          gundemMaddeleri.add(GundemMaddesi(
+            siraNo: i + 1,
+            baslik: finalKarar.baslik,
+            tur: _convertKararTuruToGundemTuru(finalKarar.tur),
+            birimAd: finalKarar.birimAd,
+            birimId: finalKarar.birimId,
+            aciklama: '',
+          ));
+        }
+
+        for (final k in kararlar) {
+          await _ykService.create(k);
+        }
+
+        return (kararlar, gundemMaddeleri);
+      }
 
       if (!containsGundem || parcalar.length <= 1) {
         // Bu bir birim karar/üst yazı belgesidir. AI ile analiz et ve şablona uygun kararlar çıkar.

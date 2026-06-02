@@ -11,6 +11,10 @@ class SistemAyarlariModel {
     this.kurulUyeleri,
     this.kurumAdi,
     this.antetBasligi,
+    this.extractorApiUrl,
+    this.extractorApiKey,
+    this.extractorProvider,
+    this.extractorEnabled,
   });
 
   final double memurMaasKatsayisi;
@@ -23,6 +27,10 @@ class SistemAyarlariModel {
   final List<KurulUyesiModel>? kurulUyeleri;
   final String? kurumAdi;
   final String? antetBasligi;
+  final String? extractorApiUrl;
+  final String? extractorApiKey;
+  final String? extractorProvider;
+  final bool? extractorEnabled;
 
   /// Hesaplanan EYDMA değeri.
   double get hesaplananEydma => eydmaGosterge * memurMaasKatsayisi;
@@ -38,6 +46,12 @@ class SistemAyarlariModel {
       (kurulUyeleri == null || kurulUyeleri!.isEmpty)
           ? varsayilanKurulUyeleri
           : kurulUyeleri!;
+
+      /// Harici tablo extractor aktif mi?
+      bool get hasActiveExtractor =>
+        (extractorEnabled ?? false) &&
+        extractorApiUrl != null &&
+        extractorApiUrl!.trim().isNotEmpty;
 
   /// Varsayılan kurul üyeleri.
   static List<KurulUyesiModel> get varsayilanKurulUyeleri => const [
@@ -70,6 +84,10 @@ class SistemAyarlariModel {
           .toList(),
       kurumAdi: map['kurumAdi'] as String?,
       antetBasligi: map['antetBasligi'] as String?,
+      extractorApiUrl: map['extractorApiUrl'] as String?,
+      extractorApiKey: map['extractorApiKey'] as String?,
+      extractorProvider: map['extractorProvider'] as String?,
+      extractorEnabled: map['extractorEnabled'] as bool?,
     );
   }
 
@@ -87,6 +105,10 @@ class SistemAyarlariModel {
         'kurulUyeleri': kurulUyeleri!.map((e) => e.toMap()).toList(),
       'kurumAdi': kurumAdi,
       'antetBasligi': antetBasligi,
+      'extractorApiUrl': extractorApiUrl,
+      'extractorApiKey': extractorApiKey,
+      'extractorProvider': extractorProvider,
+      'extractorEnabled': extractorEnabled,
     };
   }
 }

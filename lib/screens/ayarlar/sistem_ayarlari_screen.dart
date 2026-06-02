@@ -34,8 +34,12 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
   final _aiApiUrlController = TextEditingController();
   final _aiApiKeyController = TextEditingController();
   final _aiModelController = TextEditingController();
+  final _extractorApiUrlController = TextEditingController();
+  final _extractorApiKeyController = TextEditingController();
+  final _extractorProviderController = TextEditingController();
   final _kurumAdiController = TextEditingController();
   final _antetBasligiController = TextEditingController();
+  bool _extractorEnabled = false;
 
   // Ünvan katsayıları
   final Map<String, TextEditingController> _unvanControllers = {};
@@ -66,6 +70,9 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
     _aiApiUrlController.dispose();
     _aiApiKeyController.dispose();
     _aiModelController.dispose();
+    _extractorApiUrlController.dispose();
+    _extractorApiKeyController.dispose();
+    _extractorProviderController.dispose();
     _kurumAdiController.dispose();
     _antetBasligiController.dispose();
     for (final c in _unvanControllers.values) {
@@ -94,6 +101,10 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
         _aiApiUrlController.text = ayarlar.aiApiUrl ?? '';
         _aiApiKeyController.text = ayarlar.aiApiKey ?? '';
         _aiModelController.text = ayarlar.aiModel ?? '';
+        _extractorApiUrlController.text = ayarlar.extractorApiUrl ?? '';
+        _extractorApiKeyController.text = ayarlar.extractorApiKey ?? '';
+        _extractorProviderController.text = ayarlar.extractorProvider ?? '';
+        _extractorEnabled = ayarlar.extractorEnabled ?? false;
         _kurumAdiController.text = ayarlar.kurumAdi ?? 'UŞAK ÜNİVERSİTESİ';
         _antetBasligiController.text = ayarlar.antetBasligi ?? 'DÖNER SERMAYE YÜRÜTME KURULU KARARLARI';
 
@@ -110,6 +121,7 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
         _bapController.text = '5';
         _aracGerecController.text = '45';
         _dagitilabilirController.text = '49';
+        _extractorEnabled = false;
         _kurumAdiController.text = 'UŞAK ÜNİVERSİTESİ';
         _antetBasligiController.text = 'DÖNER SERMAYE YÜRÜTME KURULU KARARLARI';
 
@@ -158,6 +170,16 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
         kurulUyeleri: _ayarlar?.kurulUyeleri,
         kurumAdi: _kurumAdiController.text.trim().isEmpty ? null : _kurumAdiController.text.trim(),
         antetBasligi: _antetBasligiController.text.trim().isEmpty ? null : _antetBasligiController.text.trim(),
+        extractorApiUrl: _extractorApiUrlController.text.trim().isEmpty
+          ? null
+          : _extractorApiUrlController.text.trim(),
+        extractorApiKey: _extractorApiKeyController.text.trim().isEmpty
+          ? null
+          : _extractorApiKeyController.text.trim(),
+        extractorProvider: _extractorProviderController.text.trim().isEmpty
+          ? null
+          : _extractorProviderController.text.trim(),
+        extractorEnabled: _extractorEnabled,
       );
 
       await _service.update(model.toMap());
@@ -397,6 +419,53 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Model Adı (Örn: deepseek-chat, gpt-4o-mini)',
                         hintText: 'deepseek-chat',
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: DSYSTheme.spacingL),
+
+                // Harici Tablo Extractor Ayarları
+                _buildSectionCard(
+                  context,
+                  title: 'Hazır Tablo Extractor Ayarları (Birincil)',
+                  icon: Icons.integration_instructions_rounded,
+                  children: [
+                    SwitchListTile.adaptive(
+                      value: _extractorEnabled,
+                      onChanged: (value) {
+                        setState(() => _extractorEnabled = value);
+                      },
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Harici extractor aktif'),
+                      subtitle: const Text(
+                        'Aktifken YK karar çıkarımında önce hazır extractor servisi denenir, başarısız olursa mevcut AI/script fallback devreye girer.',
+                      ),
+                    ),
+                    const SizedBox(height: DSYSTheme.spacingM),
+                    TextFormField(
+                      controller: _extractorApiUrlController,
+                      decoration: const InputDecoration(
+                        labelText: 'Extractor API URL',
+                        hintText: 'https://extractor.example.com/api/v1/extract',
+                      ),
+                    ),
+                    const SizedBox(height: DSYSTheme.spacingM),
+                    TextFormField(
+                      controller: _extractorApiKeyController,
+                      decoration: const InputDecoration(
+                        labelText: 'Extractor API Key',
+                        hintText: 'Bearer token',
+                      ),
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: DSYSTheme.spacingM),
+                    TextFormField(
+                      controller: _extractorProviderController,
+                      decoration: const InputDecoration(
+                        labelText: 'Provider (opsiyonel)',
+                        hintText: 'camelot | paddleocr | textract',
                       ),
                     ),
                   ],
