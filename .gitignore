@@ -50,3 +50,8 @@ app.*.map.json
 secrets/
 **/service-account*.json
 **/firebase-adminsdk*.json
+
+# Local sample documents & debug tools
+ornek/
+test/debug_*.dart
+test/inspect_*.dart
