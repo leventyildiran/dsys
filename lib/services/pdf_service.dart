@@ -198,24 +198,32 @@ class PdfService {
                     ),
                   ),
 
-                if (fatura.melbesBasvuruNo != null)
-                  pw.Positioned(
-                    left: 175,
-                    top: 338,
-                    child: pw.Text(
-                      fatura.melbesBasvuruNo!,
-                      style: const pw.TextStyle(fontSize: 10),
+                if (fatura.melbesBasvuruNo != null || fatura.numuneNo != null) ...[
+                  if (fatura.melbesBasvuruNo != null && fatura.melbesBasvuruNo!.trim().isNotEmpty)
+                    pw.Positioned(
+                      left: 175,
+                      top: (fatura.numuneNo != null && fatura.numuneNo!.trim().isNotEmpty) ? 550 : 570,
+                      child: pw.SizedBox(
+                        width: 300,
+                        child: pw.Text(
+                          fatura.melbesBasvuruNo!,
+                          style: const pw.TextStyle(fontSize: 8.5),
+                        ),
+                      ),
                     ),
-                  ),
-                if (fatura.numuneNo != null)
-                  pw.Positioned(
-                    left: 175,
-                    top: 367,
-                    child: pw.Text(
-                      fatura.numuneNo!,
-                      style: const pw.TextStyle(fontSize: 10),
+                  if (fatura.numuneNo != null && fatura.numuneNo!.trim().isNotEmpty)
+                    pw.Positioned(
+                      left: 175,
+                      top: 570,
+                      child: pw.SizedBox(
+                        width: 300,
+                        child: pw.Text(
+                          fatura.numuneNo!,
+                          style: const pw.TextStyle(fontSize: 8.5),
+                        ),
+                      ),
                     ),
-                  ),
+                ],
 
                 if (sonSayfa)
                   pw.Positioned(
