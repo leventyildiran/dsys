@@ -843,9 +843,24 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
               },
             ),
             const SizedBox(height: 12),
-            Text(
-              'Karar Metni (Manuel Müdahale Alanı):',
-              style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Karar Metni (Manuel Müdahale Alanı):',
+                  style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                TextButton.icon(
+                  onPressed: () => _tabloYapistirDialog(context),
+                  icon: const Icon(Icons.table_chart_rounded, size: 16),
+                  label: const Text('Excel/Word\'den Tablo Yapıştır', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
             TextField(
@@ -1607,5 +1622,113 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
         }
       }
     }
+  }
+
+  void _tabloYapistirDialog(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Row(
+            children: const [
+              Icon(Icons.table_chart_rounded, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('Excel/Word\'den Tablo Aktar'),
+            ],
+          ),
+          content: SizedBox(
+            width: 500,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Excel, Word veya PDF\'ten kopyaladığınız tabloyu aşağıdaki alana doğrudan yapıştırın. Sistem bunu A4 uyumlu Markdown tablosuna dönüştürecektir.',
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  maxLines: 8,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Kopyalanan tablo verisini buraya yapıştırın...',
+                    hintStyle: TextStyle(fontSize: 12),
+                  ),
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('İptal'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final text = controller.text.trim();
+                if (text.isNotEmpty) {
+                  final markdownTable = _tsvToMarkdown(text);
+                  if (markdownTable.isNotEmpty) {
+                    setState(() {
+                      final currentText = _metinController.text;
+                      final selection = _metinController.selection;
+                      if (selection.isValid && selection.start >= 0) {
+                        final before = currentText.substring(0, selection.start);
+                        final after = currentText.substring(selection.end);
+                        _metinController.text = before + markdownTable + after;
+                        _metinController.selection = TextSelection.collapsed(
+                          offset: selection.start + markdownTable.length,
+                        );
+                      } else {
+                        _metinController.text = currentText + '\n' + markdownTable;
+                      }
+                    });
+                  }
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Dönüştür ve Ekle'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _tsvToMarkdown(String pastedText) {
+    final lines = pastedText.split('\n');
+    final tableLines = <String>[];
+    
+    for (var line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      
+      // Excel/Word tables copied are naturally tab-separated
+      var cells = trimmed.split('\t');
+      
+      // Fallback for spaces/commas if tabs are not found
+      if (cells.length == 1 && trimmed.contains(RegExp(r'\s{2,}'))) {
+        cells = trimmed.split(RegExp(r'\s{2,}'));
+      }
+      
+      final cleanCells = cells.map((c) => c.trim()).toList();
+      tableLines.add('| ${cleanCells.join(' | ')} |');
+    }
+    
+    if (tableLines.isEmpty) return '';
+    
+    // Add Markdown column separator line
+    if (tableLines.length > 1) {
+      final headerCellsCount = tableLines.first.split('|').length - 2;
+      if (headerCellsCount > 0) {
+        final separator = '|${List.filled(headerCellsCount, '---').join('|')}|';
+        tableLines.insert(1, separator);
+      }
+    }
+    
+    return '\n' + tableLines.join('\n') + '\n';
   }
 }

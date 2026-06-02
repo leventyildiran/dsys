@@ -342,7 +342,7 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: DSYSTheme.spacingL),
+                 const SizedBox(height: DSYSTheme.spacingL),
 
                 // Yapay Zeka API Ayarları (AI OCR Fallback)
                 _buildSectionCard(
@@ -350,6 +350,29 @@ class _SistemAyarlariScreenState extends State<SistemAyarlariScreen> {
                   title: 'Yapay Zeka API Ayarları (Gündem Ayrıştırma Fallback)',
                   icon: Icons.psychology,
                   children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.shade200, width: 0.8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.amber.shade800, size: 20),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Sistem öncelikli olarak ücretsiz Gemini API kullanır. Kota aşımı veya bağlantı hatası durumunda aşağıda belirttiğiniz yedek (DeepSeek / Özel) API otomatik olarak devreye girer.',
+                                style: TextStyle(fontSize: 12, color: Colors.black87),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     TextFormField(
                       controller: _aiApiUrlController,
                       decoration: const InputDecoration(

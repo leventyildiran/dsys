@@ -253,60 +253,89 @@ class GundemParserService {
     }
   }
 
-  /// Ortak AI sorgulama metodu. Özel AI (DeepSeek vb.) ayarları varsa onları kullanır, yoksa Gemini AI'a düşer.
+
+  /// Ortak AI sorgulama metodu.
+  /// Önce ücretsiz Gemini API'sini dener, eğer hata alırsa otomatik olarak yedek (DeepSeek / Özel AI) servise düşer.
   Future<String> _callAI(String prompt) async {
     final ayarlar = await SistemAyarlariService().get();
     final hasCustomAi = ayarlar != null && ayarlar.aiApiKey != null && ayarlar.aiApiKey!.trim().isNotEmpty;
+    final hasGemini = AppEnvironment.hasGeminiApiKey;
 
-    if (!hasCustomAi && !AppEnvironment.hasGeminiApiKey) {
+    if (!hasCustomAi && !hasGemini) {
       throw Exception('API Anahtarı bulunamadı (Gemini veya Özel AI).');
     }
 
-    if (hasCustomAi) {
-      String rawUrl = ayarlar.aiApiUrl?.trim() ?? '';
-      if (rawUrl.isEmpty || rawUrl.contains('platform.deepseek.com')) {
-        rawUrl = 'https://api.deepseek.com/v1';
-      }
-      String baseUrl = rawUrl;
-      if (!baseUrl.endsWith('/chat/completions')) {
-        if (baseUrl.endsWith('/')) {
-          baseUrl = '${baseUrl}chat/completions';
-        } else {
-          baseUrl = '$baseUrl/chat/completions';
+    Object? geminiError;
+    if (hasGemini) {
+      try {
+        final model = GenerativeModel(
+          model: 'gemini-1.5-flash',
+          apiKey: AppEnvironment.geminiApiKey,
+        );
+
+        final response = await model.generateContent([Content.text(prompt)]);
+        final text = response.text?.trim() ?? '';
+        if (text.isNotEmpty) {
+          return text;
+        }
+        throw Exception('Gemini boş yanıt döndürdü.');
+      } catch (e) {
+        debugPrint('[GundemParserService._callAI] Gemini hatası oluştu, yedek servise geçiliyor: $e');
+        geminiError = e;
+        if (!hasCustomAi) {
+          rethrow;
         }
       }
-      
-      final modelName = ayarlar.aiModel?.trim() ?? 'deepseek-chat';
-      final response = await http.post(
-        Uri.parse(baseUrl),
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Authorization': 'Bearer ${ayarlar.aiApiKey}',
-        },
-        body: jsonEncode({
-          'model': modelName,
-          'messages': [
-            {'role': 'user', 'content': prompt}
-          ],
-          'temperature': 0.1,
-        }),
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('API Hatası: ${response.statusCode} - ${response.body}');
-      }
-
-      final resData = jsonDecode(utf8.decode(response.bodyBytes));
-      return resData['choices'][0]['message']['content']?.toString().trim() ?? '';
-    } else {
-      final model = GenerativeModel(
-        model: 'gemini-1.5-flash',
-        apiKey: AppEnvironment.geminiApiKey,
-      );
-
-      final response = await model.generateContent([Content.text(prompt)]);
-      return response.text?.trim() ?? '';
     }
+
+    // Yedek (Fallback) olarak DeepSeek veya Özel AI servisini çağır
+    if (hasCustomAi) {
+      try {
+        String rawUrl = ayarlar.aiApiUrl?.trim() ?? '';
+        if (rawUrl.isEmpty || rawUrl.contains('platform.deepseek.com')) {
+          rawUrl = 'https://api.deepseek.com/v1';
+        }
+        String baseUrl = rawUrl;
+        if (!baseUrl.endsWith('/chat/completions')) {
+          if (baseUrl.endsWith('/')) {
+            baseUrl = '${baseUrl}chat/completions';
+          } else {
+            baseUrl = '$baseUrl/chat/completions';
+          }
+        }
+        
+        final modelName = ayarlar.aiModel?.trim() ?? 'deepseek-chat';
+        final response = await http.post(
+          Uri.parse(baseUrl),
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Authorization': 'Bearer ${ayarlar.aiApiKey}',
+          },
+          body: jsonEncode({
+            'model': modelName,
+            'messages': [
+              {'role': 'user', 'content': prompt}
+            ],
+            'temperature': 0.1,
+          }),
+        );
+
+        if (response.statusCode != 200) {
+          throw Exception('API Hatası: ${response.statusCode} - ${response.body}');
+        }
+
+        final resData = jsonDecode(utf8.decode(response.bodyBytes));
+        return resData['choices'][0]['message']['content']?.toString().trim() ?? '';
+      } catch (e) {
+        debugPrint('[GundemParserService._callAI] Yedek AI servisi de hata verdi: $e');
+        if (geminiError != null) {
+          throw Exception('AI servisleri başarısız oldu. Birincil (Gemini) Hata: $geminiError. İkincil (Yedek) Hata: $e');
+        }
+        rethrow;
+      }
+    }
+
+    throw Exception('Beklenmedik AI yönlendirme hatası.');
   }
 
   /// Kural tabanlı script başarısız olursa tek maddeyi AI aracılığıyla çözümler.
