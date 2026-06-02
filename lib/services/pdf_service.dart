@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -22,8 +23,21 @@ class PdfService {
   /// Bu PDF, sınır çizgileri, tablolar veya arka plan resimleri çizmez.
   /// Sadece verileri fiziksel matbu fatura üzerindeki boşluklara denk gelecek
   /// milimetrik koordinatlarla (Positioned widget'ları ile) yerleştirir.
-  static Future<Uint8List> matbuFaturaUret(FaturaModel fatura) async {
+  static Future<Uint8List> matbuFaturaUret(
+    FaturaModel fatura, {
+    bool arkaPlanGoster = false,
+  }) async {
     final pdf = pw.Document();
+
+    pw.MemoryImage? bgImage;
+    if (arkaPlanGoster) {
+      try {
+        final bgData = await rootBundle.load('assets/images/fatura_sablon.png');
+        bgImage = pw.MemoryImage(bgData.buffer.asUint8List());
+      } catch (e) {
+        // Hata durumunda boş geç
+      }
+    }
     final satirlar = fatura.kalemler.isNotEmpty
         ? fatura.kalemler
         : [
@@ -62,6 +76,10 @@ class PdfService {
           build: (pw.Context context) {
             return pw.Stack(
               children: [
+                if (bgImage != null)
+                  pw.Positioned.fill(
+                    child: pw.Image(bgImage, fit: pw.BoxFit.fill),
+                  ),
                 if (fatura.faturaTarihi != null)
                   pw.Positioned(
                     left: 480,

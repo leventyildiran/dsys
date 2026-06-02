@@ -28,6 +28,8 @@ class _FaturaScreenState extends State<FaturaScreen>
   String? _secilenBirimId;
   String? _secilenBirimAd;
   String? _secilenPdfAdi;
+  FaturaModel? _geciciFatura;
+  bool _arkaPlanGoster = true;
 
   @override
   void initState() {
@@ -50,6 +52,12 @@ class _FaturaScreenState extends State<FaturaScreen>
     final theme = Theme.of(context);
     final provider = context.watch<FaturaProvider>();
 
+    if (provider.seciliFatura == null) {
+      _geciciFatura = null;
+    } else if (_geciciFatura == null || _geciciFatura!.id != provider.seciliFatura!.id) {
+      _geciciFatura = provider.seciliFatura;
+    }
+
     return Scaffold(
       appBar: widget.embedded
           ? null
@@ -69,42 +77,44 @@ class _FaturaScreenState extends State<FaturaScreen>
             ),
       body: Row(
         children: [
-          // Sol panel: Fatura listeleri
+          // Sol panel: Düzenleme Formu veya Fatura Listeleri
           Expanded(
             flex: provider.seciliFatura != null ? 1 : 2,
-            child: Column(
-              children: [
-                if (widget.embedded) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    child: Text('Fatura Basım',
-                        style: Theme.of(context).textTheme.headlineSmall),
-                  ),
-                  TabBar(
-                    controller: _tabController,
-                    tabs: [
-                      Tab(
-                        text: 'Kuyruk (${provider.kuyrukSayisi})',
-                        icon: const Icon(Icons.queue),
-                      ),
-                      const Tab(text: 'Tümü', icon: Icon(Icons.list)),
-                      const Tab(
-                          text: 'Toplu Yükle', icon: Icon(Icons.upload_file)),
-                    ],
-                  ),
-                ],
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
+            child: provider.seciliFatura != null
+                ? _buildFaturaDuzenleForm(provider, theme)
+                : Column(
                     children: [
-                      _buildKuyrukTab(provider, theme),
-                      _buildTumFaturalarTab(provider, theme),
-                      _buildTopluYukleTab(provider, theme),
+                      if (widget.embedded) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                          child: Text('Fatura Basım',
+                              style: Theme.of(context).textTheme.headlineSmall),
+                        ),
+                        TabBar(
+                          controller: _tabController,
+                          tabs: [
+                            Tab(
+                              text: 'Kuyruk (${provider.kuyrukSayisi})',
+                              icon: const Icon(Icons.queue),
+                            ),
+                            const Tab(text: 'Tümü', icon: Icon(Icons.list)),
+                            const Tab(
+                                text: 'Toplu Yükle', icon: Icon(Icons.upload_file)),
+                          ],
+                        ),
+                      ],
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildKuyrukTab(provider, theme),
+                            _buildTumFaturalarTab(provider, theme),
+                            _buildTopluYukleTab(provider, theme),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
-            ),
           ),
           // Sağ panel: PDF Önizleme
           if (provider.seciliFatura != null) ...[
@@ -506,7 +516,7 @@ class _FaturaScreenState extends State<FaturaScreen>
 
   /// PDF Önizleme paneli — seçili faturanın gerçek PDF çıktısını gösterir.
   Widget _buildPdfOnizlemePanel(FaturaProvider provider, ThemeData theme) {
-    final fatura = provider.seciliFatura!;
+    if (_geciciFatura == null) return const SizedBox();
     return Column(
       children: [
         // Önizleme başlık çubuğu
@@ -519,15 +529,30 @@ class _FaturaScreenState extends State<FaturaScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'PDF Önizleme: ${fatura.firmaUnvan}',
+                  'PDF Önizleme: ${_geciciFatura!.firmaUnvan}',
                   style: theme.textTheme.titleSmall,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Şablonu Göster', style: TextStyle(fontSize: 12)),
+                  Switch(
+                    value: _arkaPlanGoster,
+                    onChanged: (val) {
+                      setState(() {
+                        _arkaPlanGoster = val;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.print, size: 20),
                 onPressed: () async {
-                  final pdfBytes = await PdfService.matbuFaturaUret(fatura);
+                  final pdfBytes = await PdfService.matbuFaturaUret(_geciciFatura!, arkaPlanGoster: false);
                   if (!context.mounted) return;
                   await Printing.layoutPdf(
                     onLayout: (_) async => pdfBytes,
@@ -537,7 +562,12 @@ class _FaturaScreenState extends State<FaturaScreen>
               ),
               IconButton(
                 icon: const Icon(Icons.close, size: 20),
-                onPressed: () => provider.faturaSecme(fatura), // Toggle off
+                onPressed: () {
+                  provider.faturaSecme(_geciciFatura!); // Toggle off
+                  setState(() {
+                    _geciciFatura = null;
+                  });
+                },
                 tooltip: 'Kapat',
               ),
             ],
@@ -546,15 +576,368 @@ class _FaturaScreenState extends State<FaturaScreen>
         // Gerçek PDF önizleme
         Expanded(
           child: PdfPreview(
-            build: (_) => PdfService.matbuFaturaUret(fatura),
+            build: (_) => PdfService.matbuFaturaUret(_geciciFatura!, arkaPlanGoster: _arkaPlanGoster),
             canChangeOrientation: false,
             canChangePageFormat: false,
             canDebug: false,
-            allowPrinting: true,
+            allowPrinting: false, // Print only using our top-bar button which excludes background
             allowSharing: false,
           ),
         ),
       ],
+    );
+  }
+
+  /// Manuel Düzenleme Formu
+  Widget _buildFaturaDuzenleForm(FaturaProvider provider, ThemeData theme) {
+    if (_geciciFatura == null) return const SizedBox();
+
+    return ListView(
+      key: ValueKey('form_${_geciciFatura!.id}'),
+      padding: const EdgeInsets.all(16),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Fatura Bilgilerini Düzenle', style: theme.textTheme.titleMedium),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () {
+                provider.faturaSecme(_geciciFatura!); // Toggle off
+                setState(() {
+                  _geciciFatura = null;
+                });
+              },
+            ),
+          ],
+        ),
+        const Divider(),
+        const SizedBox(height: 8),
+
+        // Firma Ünvanı
+        TextFormField(
+          key: ValueKey('firma_${_geciciFatura!.id}'),
+          initialValue: _geciciFatura!.firmaUnvan,
+          decoration: const InputDecoration(
+            labelText: 'Firma Ünvanı',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.business),
+          ),
+          onChanged: (val) {
+            setState(() {
+              _geciciFatura = _geciciFatura!.copyWith(firmaUnvan: val);
+            });
+          },
+        ),
+        const SizedBox(height: 12),
+
+        // Seri ve Sıra No
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                key: ValueKey('seri_${_geciciFatura!.id}'),
+                initialValue: _geciciFatura!.seriNo ?? '',
+                decoration: const InputDecoration(
+                  labelText: 'Seri No',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    _geciciFatura = _geciciFatura!.copyWith(seriNo: val.isEmpty ? null : val);
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                key: ValueKey('sira_${_geciciFatura!.id}'),
+                initialValue: _geciciFatura!.siraNo ?? '',
+                decoration: const InputDecoration(
+                  labelText: 'Sıra No',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    _geciciFatura = _geciciFatura!.copyWith(siraNo: val.isEmpty ? null : val);
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Fatura Tarihi
+        TextFormField(
+          key: ValueKey('tarih_${_geciciFatura!.id}'),
+          initialValue: _geciciFatura!.faturaTarihi ?? '',
+          decoration: const InputDecoration(
+            labelText: 'Fatura Tarihi',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.calendar_today),
+          ),
+          onChanged: (val) {
+            setState(() {
+              _geciciFatura = _geciciFatura!.copyWith(faturaTarihi: val.isEmpty ? null : val);
+            });
+          },
+        ),
+        const SizedBox(height: 12),
+
+        // MELBES Başvuru No
+        TextFormField(
+          key: ValueKey('melbes_${_geciciFatura!.id}'),
+          initialValue: _geciciFatura!.melbesBasvuruNo ?? '',
+          decoration: const InputDecoration(
+            labelText: 'MELBES Başvuru No',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.confirmation_number),
+          ),
+          onChanged: (val) {
+            setState(() {
+              _geciciFatura = _geciciFatura!.copyWith(melbesBasvuruNo: val.isEmpty ? null : val);
+            });
+          },
+        ),
+        const SizedBox(height: 12),
+
+        // Numune No
+        TextFormField(
+          key: ValueKey('numune_${_geciciFatura!.id}'),
+          initialValue: _geciciFatura!.numuneNo ?? '',
+          decoration: const InputDecoration(
+            labelText: 'Numune No',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.science),
+          ),
+          onChanged: (val) {
+            setState(() {
+              _geciciFatura = _geciciFatura!.copyWith(numuneNo: val.isEmpty ? null : val);
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+
+        Text('Fatura Kalemleri', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 8),
+
+        // Kalemler Listesi
+        ..._geciciFatura!.kalemler.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final kalem = entry.value;
+
+          return Card(
+            key: ValueKey('kalem_${_geciciFatura!.id}_$idx'),
+            margin: const EdgeInsets.only(bottom: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextFormField(
+                          initialValue: kalem.aciklama,
+                          decoration: const InputDecoration(
+                            labelText: 'Açıklama',
+                            isDense: true,
+                          ),
+                          onChanged: (val) {
+                            _updateKalem(idx, aciklama: val);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          _deleteKalem(idx);
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          initialValue: '${kalem.adet}',
+                          decoration: const InputDecoration(
+                            labelText: 'Adet',
+                            isDense: true,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (val) {
+                            final adet = int.tryParse(val) ?? 1;
+                            _updateKalem(idx, adet: adet);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          initialValue: '${kalem.birimFiyat}',
+                          decoration: const InputDecoration(
+                            labelText: 'Birim Fiyat',
+                            isDense: true,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (val) {
+                            final fiyat = double.tryParse(val) ?? 0.0;
+                            _updateKalem(idx, birimFiyat: fiyat);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Tutar:\n${TurkceFormat.para(kalem.tutar)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+
+        OutlinedButton.icon(
+          onPressed: _addKalem,
+          icon: const Icon(Icons.add),
+          label: const Text('Yeni Kalem Ekle'),
+        ),
+        const SizedBox(height: 20),
+
+        // Toplam Özet
+        Card(
+          color: theme.colorScheme.surfaceContainerHighest,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                _buildSummaryRow('Ara Toplam', TurkceFormat.para(_geciciFatura!.tutar)),
+                _buildSummaryRow('KDV (%${_geciciFatura!.kdvOrani.toInt()})', TurkceFormat.para(_geciciFatura!.kdvTutar)),
+                const Divider(),
+                _buildSummaryRow('Genel Toplam', TurkceFormat.para(_geciciFatura!.toplamTutar), bold: true),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // İşlem Butonları
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  provider.faturaSecme(_geciciFatura!); // Toggle off
+                  setState(() {
+                    _geciciFatura = null;
+                  });
+                },
+                child: const Text('İptal'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () async {
+                  final ok = await provider.faturaGuncelle(
+                    _geciciFatura!.id,
+                    _geciciFatura!.toMap(),
+                  );
+                  if (ok && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Fatura güncellendi.')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.save),
+                label: const Text('Kaydet'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 40),
+      ],
+    );
+  }
+
+  void _recalculateTotals(List<FaturaKalem> kalemler) {
+    final araToplam = kalemler.fold<double>(0.0, (sum, item) => sum + item.tutar);
+    final kdvTutar = araToplam * (_geciciFatura!.kdvOrani / 100);
+    final toplamTutar = araToplam + kdvTutar;
+
+    setState(() {
+      _geciciFatura = _geciciFatura!.copyWith(
+        kalemler: kalemler,
+        tutar: araToplam,
+        kdvTutar: kdvTutar,
+        toplamTutar: toplamTutar,
+        hizmetDetay: kalemler.isNotEmpty ? kalemler.first.aciklama : '',
+      );
+    });
+  }
+
+  void _updateKalem(int index, {String? aciklama, int? adet, double? birimFiyat}) {
+    final list = List<FaturaKalem>.from(_geciciFatura!.kalemler);
+    final old = list[index];
+    final newAdet = adet ?? old.adet;
+    final newFiyat = birimFiyat ?? old.birimFiyat;
+
+    list[index] = FaturaKalem(
+      aciklama: aciklama ?? old.aciklama,
+      adet: newAdet,
+      birimFiyat: newFiyat,
+      tutar: newAdet * newFiyat,
+    );
+    _recalculateTotals(list);
+  }
+
+  void _addKalem() {
+    final list = List<FaturaKalem>.from(_geciciFatura!.kalemler);
+    list.add(const FaturaKalem(
+      aciklama: 'Yeni Analiz/Hizmet Kalemi',
+      adet: 1,
+      birimFiyat: 0.0,
+      tutar: 0.0,
+    ));
+    _recalculateTotals(list);
+  }
+
+  void _deleteKalem(int index) {
+    final list = List<FaturaKalem>.from(_geciciFatura!.kalemler);
+    list.removeAt(index);
+    _recalculateTotals(list);
+  }
+
+  Widget _buildSummaryRow(String label, String value, {bool bold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

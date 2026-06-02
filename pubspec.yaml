@@ -98,6 +98,7 @@ flutter:
   assets:
     - assets/templates/karar_sablonu.docx
     - assets/templates/gundem_sablonu.docx
+    - assets/images/fatura_sablon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
