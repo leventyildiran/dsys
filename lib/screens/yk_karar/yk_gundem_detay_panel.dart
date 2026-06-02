@@ -704,6 +704,12 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
                         ),
                         const SizedBox(width: 8),
                         IconButton(
+                          icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                          tooltip: 'Kararı Tamamen Sil',
+                          onPressed: _seciliKararId == null ? null : () => _kararSilOnay(context, _seciliKararId!, ykProvider),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
                           icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.green),
                           tooltip: 'Yeni Karar Ekle',
                           onPressed: () => _yeniKararOlustur(context, toplanti, ykProvider),
