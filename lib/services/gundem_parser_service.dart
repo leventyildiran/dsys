@@ -263,7 +263,11 @@ class GundemParserService {
     }
 
     if (hasCustomAi) {
-      String baseUrl = ayarlar.aiApiUrl?.trim() ?? 'https://api.deepseek.com/v1';
+      String rawUrl = ayarlar.aiApiUrl?.trim() ?? '';
+      if (rawUrl.isEmpty || rawUrl.contains('platform.deepseek.com')) {
+        rawUrl = 'https://api.deepseek.com/v1';
+      }
+      String baseUrl = rawUrl;
       if (!baseUrl.endsWith('/chat/completions')) {
         if (baseUrl.endsWith('/')) {
           baseUrl = '${baseUrl}chat/completions';
@@ -390,6 +394,7 @@ Kurallar:
 - {UYK_KARAR_TARIHI}, {UYK_TOPLANTI_SAYI}, {UYK_KARAR_NO} değerlerini eğer metinde geçiyorsa oradan al, geçmiyorsa boş bırak veya uygun bir varsayılan koy.
 - Metindeki firma adı, işin konusu, hoca unvanı ve adı, süre, katsayı gibi değişkenleri çıkarıp şablonda süslü parantezli yerlere yerleştir.
 - Katsayıyı iki basamaklı (Örn: 19,50 veya 0,42) formatta yaz.
+- Karar metninde eğer bir tablo (örneğin hakediş dağılımı, faaliyet cetveli, taksit planları, ödeme/personel listeleri veya rakamsal dağılımlar) varsa, bu tabloyu mutlaka standart markdown tablosu formatında (`| Sütun 1 | Sütun 2 |` ve `|---|---|` şeklinde) karar metninin içine yerleştir. Tablo satırlarının başına ve sonuna mutlaka `|` karakterlerini koy.
 - Eğer metin bu şablonlara hiç uymayan bir bütçe aktarımı veya personel görevlendirmesi ise, resmi dille yazılmış düzgün bir Türkçe karar metni oluştur.
 
 Çıktı formatı mutlaka geçerli bir JSON array olmalıdır. Başka hiçbir açıklama yazısı, not veya markdown bloğu (```json gibi) ekleme, sadece JSON listesi döndür:
@@ -409,15 +414,12 @@ $pdfText
     try {
       final responseText = await _callAI(prompt);
       String jsonText = responseText.trim();
-      if (jsonText.startsWith('```')) {
-        final lines = jsonText.split('\n');
-        if (lines.first.startsWith('```')) {
-          lines.removeAt(0);
-        }
-        if (lines.last.startsWith('```')) {
-          lines.removeLast();
-        }
-        jsonText = lines.join('\n').trim();
+      
+      // Extract the JSON array portion safely
+      int startIndex = jsonText.indexOf('[');
+      int endIndex = jsonText.lastIndexOf(']');
+      if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+        jsonText = jsonText.substring(startIndex, endIndex + 1);
       }
 
       final List<dynamic> list = jsonDecode(jsonText);
@@ -451,9 +453,9 @@ $pdfText
         ));
       }
       return listKarar;
-    } catch (e) {
-      debugPrint('[GundemParserService._aiBirimKararlariniAyristir] Hata: $e');
-      return [];
+    } catch (e, stackTrace) {
+      debugPrint('[GundemParserService._aiBirimKararlariniAyristir] Hata: $e\n$stackTrace');
+      rethrow; // Rethrow to let the UI show the actual error snackbar
     }
   }
 

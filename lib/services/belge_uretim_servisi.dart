@@ -88,18 +88,57 @@ class BelgeUretimServisi {
   /// Gerçek .docx ZIP arşivi üretir — Word ile açılabilir.
   static Uint8List docxOlustur(KararBelgesi belge) {
     final content = belge.tamMetin;
-    final docXml = _buildDocumentXml(content, belge);
+    final docXml = _buildDocumentXml(content);
     return _buildDocxArchive(docXml);
   }
 
   /// Düz metinden Word (DOCX) dosyası üretir.
   static Uint8List metindenDocxOlustur(String content) {
-    final paragraphs = content.split('\n').map((line) {
-      final escaped = _xmlEscape(line);
-      return '''<w:p><w:r><w:t xml:space="preserve">$escaped</w:t></w:r></w:p>''';
-    }).join('\n');
+    final docXml = _buildDocumentXml(content);
+    return _buildDocxArchive(docXml);
+  }
 
-    final docXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  /// Basit bir document.xml üretir (Word paragrafları ve tabloları).
+  static String _buildDocumentXml(String content) {
+    final lines = content.split('\n');
+    final bodyContent = StringBuffer();
+    
+    List<List<String>>? currentTable;
+    
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 2) {
+        // Table line
+        if (trimmed.contains(RegExp(r'^\|[\s:-|]+$'))) {
+          continue;
+        }
+        final cells = trimmed.split('|')
+            .map((c) => c.trim())
+            .toList();
+        if (cells.first.isEmpty) cells.removeAt(0);
+        if (cells.isNotEmpty && cells.last.isEmpty) cells.removeLast();
+        
+        currentTable ??= [];
+        currentTable.add(cells);
+      } else {
+        // Not a table line. Render previous table if any
+        if (currentTable != null) {
+          bodyContent.writeln(_buildDocxTableXml(currentTable));
+          currentTable = null;
+        }
+        
+        if (trimmed.isNotEmpty) {
+          final escaped = _xmlEscape(line);
+          bodyContent.writeln('<w:p><w:r><w:t xml:space="preserve">$escaped</w:t></w:r></w:p>');
+        }
+      }
+    }
+    
+    if (currentTable != null) {
+      bodyContent.writeln(_buildDocxTableXml(currentTable));
+    }
+
+    return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
             xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -116,11 +155,9 @@ class BelgeUretimServisi {
             xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
             mc:Ignorable="w14 wp14">
   <w:body>
-$paragraphs
+${bodyContent.toString()}
   </w:body>
 </w:document>''';
-
-    return _buildDocxArchive(docXml);
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -325,34 +362,7 @@ $paragraphs
   // 6. DOCX (Office Open XML) ÜRETİMİ — Gerçek ZIP Arşivi
   // ─────────────────────────────────────────────────────────────
 
-  /// Basit bir document.xml üretir (Word paragrafları).
-  static String _buildDocumentXml(String content, KararBelgesi belge) {
-    final paragraphs = content.split('\n').map((line) {
-      final escaped = _xmlEscape(line);
-      return '''<w:p><w:r><w:t xml:space="preserve">$escaped</w:t></w:r></w:p>''';
-    }).join('\n');
 
-    return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
-            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:o="urn:schemas-microsoft-com:office:office"
-            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-            xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
-            xmlns:v="urn:schemas-microsoft-com:vml"
-            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
-            xmlns:w10="urn:schemas-microsoft-com:office:word"
-            xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-            xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"
-            xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup"
-            xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk"
-            xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml"
-            xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
-            mc:Ignorable="w14 wp14">
-  <w:body>
-$paragraphs
-  </w:body>
-</w:document>''';
-  }
 
   /// Gerçek .docx ZIP arşivini oluşturur.
   ///
@@ -398,6 +408,84 @@ $paragraphs
   static void _addFileToArchive(Archive archive, String name, String content) {
     final data = utf8.encode(content);
     archive.addFile(ArchiveFile(name, data.length, data));
+  }
+
+  /// Markdown tablosundan yerel (native) Word XML tablosu üretir.
+  static String _buildDocxTableXml(List<List<String>> tableData) {
+    final buffer = StringBuffer();
+    buffer.writeln('<w:tbl>');
+    
+    // Tablo özellikleri (Kenarlıklar ve ortalama hizalama)
+    buffer.writeln('''
+      <w:tblPr>
+        <w:tblStyle w:val="TableGrid"/>
+        <w:tblW w:w="5000" w:type="pct"/>
+        <w:tblBorders>
+          <w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+          <w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+          <w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+          <w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+          <w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+          <w:insideV w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+        </w:tblBorders>
+        <w:jc w:val="center"/>
+      </w:tblPr>
+    ''');
+    
+    // Tablo Grid yapısı (Sütunlar)
+    if (tableData.isNotEmpty) {
+      final colCount = tableData.first.length;
+      buffer.writeln('<w:tblGrid>');
+      for (int i = 0; i < colCount; i++) {
+        buffer.writeln('<w:gridCol/>');
+      }
+      buffer.writeln('</w:tblGrid>');
+    }
+    
+    // Satırlar ve Hücreler
+    for (int rowIndex = 0; rowIndex < tableData.length; rowIndex++) {
+      final row = tableData[rowIndex];
+      final isHeader = rowIndex == 0;
+      buffer.writeln('<w:tr>');
+      
+      for (final cell in row) {
+        final escaped = _xmlEscape(cell);
+        buffer.writeln('<w:tc>');
+        
+        // Hücre özellikleri (Başlık için gri arka plan dolgusu)
+        buffer.writeln('<w:tcPr>');
+        buffer.writeln('<w:tcW w:w="0" w:type="auto"/>');
+        if (isHeader) {
+          buffer.writeln('<w:shd w:val="clear" w:color="auto" w:fill="F2F2F2"/>');
+        }
+        buffer.writeln('</w:tcPr>');
+        
+        // Paragraf ve hizalama
+        buffer.writeln('<w:p>');
+        buffer.writeln('<w:pPr>');
+        // Sayısal veya başlık hücresi ise ortala, değilse sola hizala
+        if (isHeader || RegExp(r'^\d+(\.\d+)?\s*([%₺]|TL)?$').hasMatch(cell.trim())) {
+          buffer.writeln('<w:jc w:val="center"/>');
+        } else {
+          buffer.writeln('<w:jc w:val="left"/>');
+        }
+        buffer.writeln('</w:pPr>');
+        
+        buffer.writeln('<w:r>');
+        if (isHeader) {
+          buffer.writeln('<w:rPr><w:b/></w:rPr>'); // Başlık hücresi koyu yazılır
+        }
+        buffer.writeln('<w:t xml:space="preserve">$escaped</w:t>');
+        buffer.writeln('</w:r>');
+        buffer.writeln('</w:p>');
+        
+        buffer.writeln('</w:tc>');
+      }
+      buffer.writeln('</w:tr>');
+    }
+    
+    buffer.writeln('</w:tbl>');
+    return buffer.toString();
   }
 
   static String _xmlEscape(String text) {

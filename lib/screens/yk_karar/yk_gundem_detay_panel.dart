@@ -793,10 +793,7 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
-            Text(
-              "      ${_metinController.text}",
-              textAlign: TextAlign.justify,
-            ),
+            _renderKararMetni(_metinController.text),
             const SizedBox(height: 24),
 
             const Center(
@@ -812,6 +809,125 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _renderKararMetni(String text) {
+    final lines = text.split('\n');
+    final children = <Widget>[];
+
+    List<List<String>>? currentTable;
+
+    void flushTable() {
+      if (currentTable == null) return;
+      if (currentTable!.isEmpty) {
+        currentTable = null;
+        return;
+      }
+
+      // Render the currentTable as a Table widget matching the official theme
+      children.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Table(
+            border: TableBorder.all(color: Colors.black, width: 0.8),
+            columnWidths: Map.fromIterable(
+              List.generate(currentTable!.first.length, (i) => i),
+              key: (i) => i,
+              value: (i) => const FlexColumnWidth(),
+            ),
+            children: currentTable!.asMap().entries.map((entry) {
+              final rowIndex = entry.key;
+              final row = entry.value;
+              final isHeader = rowIndex == 0;
+
+              return TableRow(
+                decoration: isHeader
+                    ? BoxDecoration(color: Colors.grey.shade200)
+                    : null,
+                children: row.map((cell) {
+                  return Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Text(
+                      cell.trim(),
+                      style: TextStyle(
+                        fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 10,
+                        color: Colors.black,
+                      ),
+                      textAlign: isHeader ? TextAlign.center : TextAlign.left,
+                    ),
+                  );
+                }).toList(),
+              );
+            }).toList(),
+          ),
+        ),
+      );
+      currentTable = null;
+    }
+
+    List<String> currentParagraphLines = [];
+
+    void flushParagraph() {
+      if (currentParagraphLines.isEmpty) return;
+      final paragraphText = currentParagraphLines.join(' ').trim();
+      if (paragraphText.isNotEmpty) {
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              "      $paragraphText",
+              textAlign: TextAlign.justify,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.black,
+                height: 1.4,
+              ),
+            ),
+          ),
+        );
+      }
+      currentParagraphLines.clear();
+    }
+
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 2) {
+        // Table line
+        flushParagraph(); // Flush any paragraph text before the table starts
+
+        if (trimmed.contains(RegExp(r'^\|[\s:-|]+$'))) {
+          // Divider row, skip it
+          continue;
+        }
+
+        final cells = trimmed.split('|')
+            .map((c) => c.trim())
+            .toList();
+        if (cells.first.isEmpty) cells.removeAt(0);
+        if (cells.isNotEmpty && cells.last.isEmpty) cells.removeLast();
+
+        currentTable ??= [];
+        currentTable!.add(cells);
+      } else {
+        // Not a table line.
+        flushTable();
+
+        if (trimmed.isEmpty) {
+          flushParagraph();
+        } else {
+          currentParagraphLines.add(trimmed);
+        }
+      }
+    }
+
+    flushTable();
+    flushParagraph();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
     );
   }
 
