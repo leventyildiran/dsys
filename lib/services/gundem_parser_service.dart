@@ -395,30 +395,17 @@ Kurallar:
 - Metindeki firma adı, işin konusu, hoca unvanı ve adı, süre, katsayı gibi değişkenleri çıkarıp şablonda süslü parantezli yerlere yerleştir.
 - Katsayıyı iki basamaklı (Örn: 19,50 veya 0,42) formatta yaz.
 - Karar metninde eğer bir tablo (örneğin hakediş dağılımı, faaliyet cetveli, taksit planları, ödeme/personel listeleri veya rakamsal dağılımlar) varsa, bu tabloyu mutlaka standart markdown tablosu formatında (`| Sütun 1 | Sütun 2 |` ve `|---|---|` şeklinde) karar metninin içine yerleştir. Tablo satırlarının başına ve sonuna mutlaka `|` karakterlerini koy.
-- TABLOLARI VE SÜTUNLARI DÜZELTME VE HİZALAMA KURALLARI (ÇOK ÖNEMLİ):
-  PDF'ten çıkarılan metinlerde tablolar bozuk akabilir ve hücreler alt alta listelenebilir.
-  Özellikle "Faaliyet | Puan | Birimi | [Hoca Adı]" şeklindeki Gelir Getirici Faaliyet Cetvellerinde:
-  Metin akışı şöyledir:
-  "Tasarım
-   20
-   ADET
-   15"
-  Buradaki "15" sayısı, Tasarım satırının son sütunundaki (Hoca sütunundaki) değerdir. Kesinlikle bağımsız bir satır ("| 15 | - | - |") DEĞİLDİR!
-  Aynı şekilde:
-  "Şartname Yazımı
-   20
-   ADET
-   2
-   2"
-  Buradaki "2" ve "2" sayıları, Şartname Yazımı satırının sonundaki iki farklı hoca sütununa ait puanlardır. Bunları kesinlikle tek bir satırda birleştirerek render et:
-  Doğru format: `| Şartname Yazımı | 20 | ADET | 2 | 2 |`
-  Yanlış format:
-  `| Şartname Yazımı | 20 | ADET | | |`
-  `| 2 | - | - | | |`
-  `| 2 | - | - | | |`
-  Asla tek başına duran sayıları (6, 2, 15 vb.) bağımsız birer satır veya faaliyet olarak ekleme! Onlar üstteki faaliyet satırına ait bireysel puanlardır.
-  Tablonun en altında yer alan "Toplam Puan", "Unvan Katsayısı", "Bireysel Gelir Getirici Faaliyet Puanı" ve "Toplam Gelir Getirici Faaliyet Puanı" gibi satırların altındaki değerlerin (örn: 200 ve 320 gibi birden fazla değerin) hangi sütunlara ait olduğunu, ilgili sütunun yukarıdaki değerlerinin toplamıyla veya katsayı çarpımıyla (Matematiksel Tutarlılık) doğrula ve doğru sütunlara yerleştir.
-  Eğer tablo başlığında veya hoca isimlerinde karakter bozulması varsa (örn: "n5n55"), bunu belgedeki diğer imzacıların isimlerine veya bağlama bakarak düzelt (örn: "Öğr. Gör. Dr. Esra SUNERLİ TOPAN" veya diğer görevlendirilen hocalar).
+- GENEL TABLO REKONSTRÜKSİYON VE SÜTUN HİZALAMA KURALLARI (HER TÜRLÜ TABLO İÇİN GEÇERLİ):
+  Belgelerde bütçe aktarımları, personel listeleri, ödeme planları, hakediş cetvelleri vb. 100 farklı biçimde tablo yer alabilir. PDF metin çıkarıcı (extractor) bu tabloların hücrelerini alt alta veya sütun sütun dikey bir akışta dökebilir. Tabloların biçimi ne olursa olsun, doğru dönüştürmek için şu algoritmayı uygula:
+  1. Tablo Sütun Şemasını (Header) Tespit Et: Tablonun kaç sütundan oluştuğunu ve her sütunun adını/türünü (örn: Metin, Sayı, Birim, Tarih vb.) anla.
+  2. Alt Alta Gelen Hücreleri Yatay Satırlarda Birleştir: Metin akışındaki dikey sıralı hücreleri, belirlenen sütun sırasına göre yatay satırlar haline getir.
+     Örnek dikey akış: "Tasarım" -> "20" -> "ADET" -> "15".
+     Doğru birleştirme: `| Tasarım | 20 | ADET | 15 |`
+     Yanlış birleştirme (asla yapma): `| Tasarım | 20 | ADET | |` ve altına `| 15 | - | - |` şeklinde yeni satır açmak.
+     Tek başına duran sayı veya hücre değerlerini asla bağımsız birer satır yapma; onları üstteki ana satırın ilgili sütununa yerleştir.
+  3. Eksik/Boş Hücrelerin Tespiti ve Hizalama: Eğer bir satırda bazı hücreler boşsa, akıştaki değerleri türlerine göre (örn: metin verisini sözel sütuna, sayıları sayısal/puan sütununa) mantıksal olarak hizala.
+  4. Matematiksel Tutarlılık ve Doğrulama: Tablonun altındaki "Toplam Puan", "Genel Toplam", "Katsayı" gibi satırlardaki değerlerin hangi sütuna ait olduğunu, yukarıdaki satırların toplamı veya katsayı çarpımlarıyla doğrula.
+  5. Karakter ve İsim Kurtarma: PDF okuma sırasında bozulan (örn: "n5n55", "") tablo başlıklarını veya hücre değerlerini, belgedeki imzacı listesinden veya bağlamdan yola çıkarak düzelt.
 - Eğer metin bu şablonlara hiç uymayan bir bütçe aktarımı veya personel görevlendirmesi ise, resmi dille yazılmış düzgün bir Türkçe karar metni oluştur.
 
 Çıktı formatı mutlaka geçerli bir JSON array olmalıdır. Başka hiçbir açıklama yazısı, not veya markdown bloğu (```json gibi) ekleme, sadece JSON listesi döndür:
