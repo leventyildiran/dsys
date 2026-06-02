@@ -21,6 +21,11 @@ import '../../services/data_service.dart';
 import '../../services/gundem_parser_service.dart';
 import '../../services/pdf_service.dart';
 import '../../services/belge_uretim_servisi.dart';
+import '../gundem/gundem_screen.dart';
+import 'yk_gundem_yazma_panel.dart';
+import 'yk_karar_merkezi_screen.dart';
+
+enum YkEndDrawerType { agenda, archive }
 
 /// Yürütme Kurulu Gündem ve Karar Çalışma Alanı (Workspace).
 /// Sol tarafta karar ayarları ve evrak ekleri yer alırken,
@@ -28,16 +33,19 @@ import '../../services/belge_uretim_servisi.dart';
 class YkGundemDetayPanel extends StatefulWidget {
   const YkGundemDetayPanel({
     super.key,
-    required this.onGoToToplantilar,
+    this.onGoToToplantilar,
   });
 
-  final VoidCallback onGoToToplantilar;
+  final VoidCallback? onGoToToplantilar;
 
   @override
   State<YkGundemDetayPanel> createState() => _YkGundemDetayPanelState();
 }
 
 class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  YkEndDrawerType _endDrawerType = YkEndDrawerType.agenda;
+
   bool _isImporting = false;
   String? _sonToplantiId;
   String? _seciliKararId;
@@ -50,6 +58,10 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
   String? _seciliBirimAd;
   YkKararTuru? _seciliTur;
   YkKararDurum? _seciliDurum;
+
+  bool _pdfPanelAcik = true;
+  bool _pdfPanelInitialized = false;
+  bool _previewTumKararlar = false;
 
   final Map<String, int> _pdfGundemSayilari = {};
   final Set<String> _pdfYuklenenUrls = {};
@@ -141,14 +153,44 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
 
     final kararlar = ykProvider.kararlar;
 
+    // Auto-collapse PDF bar if we have decisions loaded for the first time
+    if (!_pdfPanelInitialized && kararlar.isNotEmpty) {
+      _pdfPanelInitialized = true;
+      _pdfPanelAcik = false;
+    }
+
     // Kararlar listesi yüklendiğinde ve henüz seçim yapılmadıysa ilk kararı seç
     if (kararlar.isNotEmpty && _seciliKararId == null) {
       _kararSec(kararlar.first);
     }
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: Drawer(
+        width: 420,
+        child: GundemScreen(
+          embedded: true,
+          onToplantiSecildi: () {
+            _scaffoldKey.currentState?.closeDrawer();
+          },
+        ),
+      ),
+      endDrawer: Drawer(
+        width: 550,
+        child: _endDrawerType == YkEndDrawerType.agenda
+            ? YkGundemYazmaPanel(
+                onGoToToplantilar: () {
+                  _scaffoldKey.currentState?.closeEndDrawer();
+                  _scaffoldKey.currentState?.openDrawer();
+                },
+              )
+            : const YkKararMerkeziScreen(embedded: true),
+      ),
       body: Column(
         children: [
+          // ÜST WORKSPACE HEADER
+          _buildWorkspaceHeader(toplanti, provider, kararlar, theme),
+
           // ÜST BÖLÜM: Yüklenen PDF Dosyaları (Belgeler)
           _buildPdfDosyalariBar(toplanti, provider, theme),
           const Divider(height: 1, thickness: 1),
@@ -171,7 +213,7 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
                       // Sağ Bölüm: Canlı Karar Önizleme (A4)
                       Expanded(
                         flex: 5,
-                        child: _buildSagPanel(toplanti, theme),
+                        child: _buildSagPanel(toplanti, kararlar, theme),
                       ),
                     ],
                   );
@@ -182,7 +224,7 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
                       children: [
                         _buildSolPanel(context, toplanti, kararlar, ykProvider, theme),
                         const SizedBox(height: 24),
-                        _buildSagPanel(toplanti, theme),
+                        _buildSagPanel(toplanti, kararlar, theme),
                       ],
                     ),
                   );
@@ -195,48 +237,161 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
     );
   }
 
+  /// Premium Workspace Header
+  Widget _buildWorkspaceHeader(
+    ToplantiModel toplanti,
+    GundemProvider provider,
+    List<YkKararModel> kararlar,
+    ThemeData theme,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          // Select meeting button
+          ActionChip(
+            avatar: Icon(Icons.event_rounded, size: 16, color: theme.colorScheme.primary),
+            label: Text(
+              'Toplantı Seç: No ${toplanti.toplantiNo} (${toplanti.toplantiTarihi})',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            onPressed: () {
+              _scaffoldKey.currentState?.openDrawer();
+            },
+            backgroundColor: theme.colorScheme.primaryContainer.withOpacity(0.4),
+            side: BorderSide.none,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          const SizedBox(width: 12),
+          
+          // Agenda editor button
+          ActionChip(
+            avatar: const Icon(Icons.event_note_rounded, size: 16),
+            label: Text('Gündem Maddeleri (${toplanti.gundemMaddeleri.length})'),
+            onPressed: () {
+              setState(() {
+                _endDrawerType = YkEndDrawerType.agenda;
+              });
+              _scaffoldKey.currentState?.openEndDrawer();
+            },
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          const SizedBox(width: 8),
+          
+          // Archive / exports button
+          ActionChip(
+            avatar: const Icon(Icons.gavel_rounded, size: 16),
+            label: const Text('Karar Defteri & Çıktılar'),
+            onPressed: () {
+              setState(() {
+                _endDrawerType = YkEndDrawerType.archive;
+              });
+              _scaffoldKey.currentState?.openEndDrawer();
+            },
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          const Spacer(),
+          
+          // Decision count badge
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Row(
+              children: [
+                Icon(Icons.description_rounded, size: 14, color: theme.colorScheme.primary),
+                const SizedBox(width: 4),
+                Text(
+                  '${kararlar.length} Karar',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Toplantı seçilmediğinde gösterilen boş ekran
   Widget _buildBosEkran(ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withOpacity(0.2),
-                shape: BoxShape.circle,
+    return Scaffold(
+      key: _scaffoldKey,
+      drawer: Drawer(
+        width: 420,
+        child: GundemScreen(
+          embedded: true,
+          onToplantiSecildi: () {
+            _scaffoldKey.currentState?.closeDrawer();
+          },
+        ),
+      ),
+      appBar: AppBar(
+        title: const Text('Yürütme Kurulu Çalışma Alanı'),
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () {
+            _scaffoldKey.currentState?.openDrawer();
+          },
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.event_note_rounded,
+                  size: 64,
+                  color: theme.colorScheme.primary,
+                ),
               ),
-              child: Icon(
-                Icons.event_note_rounded,
-                size: 64,
-                color: theme.colorScheme.primary,
+              const SizedBox(height: 24),
+              Text(
+                'Gündem / Toplantı Seçilmedi',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Gündem / Toplantı Seçilmedi',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 12),
+              Text(
+                'Kararları canlı önizlemek ve düzenlemek için\nlütfen sol panelden bir toplantı seçin.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Kararları canlı önizlemek ve düzenlemek için\nlütfen "Toplantılar" sekmesinden bir toplantı seçin.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () {
+                  _scaffoldKey.currentState?.openDrawer();
+                },
+                icon: const Icon(Icons.event_rounded),
+                label: const Text('Toplantıları Göster / Seç'),
               ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: widget.onGoToToplantilar,
-              icon: const Icon(Icons.arrow_back_rounded),
-              label: const Text('Toplantılara Git'),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -256,7 +411,7 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
 
     return Container(
       color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       width: double.infinity,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,165 +419,200 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _pdfPanelAcik = !_pdfPanelAcik;
+                  });
+                },
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _pdfPanelAcik ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                        color: theme.colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.attachment_rounded, color: theme.colorScheme.primary, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Birimlerden Gelen Karar Belgeleri (${toplanti.pdfUrls.length} Adet PDF)',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               Row(
                 children: [
-                  Icon(Icons.attachment_rounded, color: theme.colorScheme.primary, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Birimlerden Gelen Karar Belgeleri (PDF):',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurfaceVariant,
+                  if (!_pdfPanelAcik && toplanti.pdfUrls.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Text(
+                        '(${toplanti.pdfUrls.length} belge gizlendi - görmek için tıklayın)',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  FilledButton.icon(
+                    onPressed: _isImporting ? null : () => _pdfDosyaSecVeYukle(context, toplanti.id, provider),
+                    icon: const Icon(Icons.upload_file_rounded, size: 16),
+                    label: const Text('Yeni Belge/PDF Yükle', style: TextStyle(fontSize: 12)),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                   ),
                 ],
               ),
-              FilledButton.icon(
-                onPressed: _isImporting ? null : () => _pdfDosyaSecVeYukle(context, toplanti.id, provider),
-                icon: const Icon(Icons.upload_file_rounded, size: 16),
-                label: const Text('Yeni Belge/PDF Yükle', style: TextStyle(fontSize: 12)),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-              ),
             ],
           ),
-          const SizedBox(height: 10),
-          _isImporting
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Column(
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 8),
-                        Text('Belgeler işleniyor, lütfen bekleyiniz...', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
-                      ],
+          if (_pdfPanelAcik) ...[
+            const SizedBox(height: 8),
+            _isImporting
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 8),
+                          Text('Belgeler işleniyor, lütfen bekleyiniz...', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+                        ],
+                      ),
                     ),
-                  ),
-                )
-              : SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      if (toplanti.pdfUrls.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            'Bu toplantıya eklenmiş herhangi bir PDF belgesi bulunmamaktadır.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontStyle: FontStyle.italic,
-                              color: theme.colorScheme.onSurfaceVariant,
+                  )
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        if (toplanti.pdfUrls.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Text(
+                              'Bu toplantıya eklenmiş herhangi bir PDF belgesi bulunmamaktadır.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontStyle: FontStyle.italic,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
-                          ),
-                        )
-                      else
-                        ...toplanti.pdfUrls.map((url) {
-                          String fileName = 'Ek Belge.pdf';
-                          try {
-                            final uri = Uri.parse(url);
-                            final decoded = Uri.decodeComponent(uri.pathSegments.last);
-                            fileName = decoded.split('/').last;
-                          } catch (_) {}
+                          )
+                        else
+                          ...toplanti.pdfUrls.map((url) {
+                            String fileName = 'Ek Belge.pdf';
+                            try {
+                              final uri = Uri.parse(url);
+                              final decoded = Uri.decodeComponent(uri.pathSegments.last);
+                              fileName = decoded.split('/').last;
+                            } catch (_) {}
 
-                          final count = _pdfGundemSayilari[url];
-                          final countText = count != null
-                              ? '$count Yürütme Kurulu Gündemi'
-                              : 'Gündem sayısı hesaplanıyor...';
+                            final count = _pdfGundemSayilari[url];
+                            final countText = count != null
+                                ? '$count Yürütme Kurulu Gündemi'
+                                : 'Gündem sayısı hesaplanıyor...';
 
-                          return Card(
-                            elevation: 1,
-                            margin: const EdgeInsets.only(right: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.6)),
-                            ),
-                            child: Container(
-                              width: 320,
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 24),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              fileName,
-                                              style: theme.textTheme.bodyMedium?.copyWith(
-                                                fontWeight: FontWeight.bold,
+                            return Card(
+                              elevation: 1,
+                              margin: const EdgeInsets.only(right: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.6)),
+                              ),
+                              child: Container(
+                                width: 320,
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 24),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                fileName,
+                                                style: theme.textTheme.bodyMedium?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              countText,
-                                              style: theme.textTheme.bodySmall?.copyWith(
-                                                color: theme.colorScheme.onSurfaceVariant,
-                                                fontWeight: FontWeight.w500,
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                countText,
+                                                style: theme.textTheme.bodySmall?.copyWith(
+                                                  color: theme.colorScheme.onSurfaceVariant,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 18),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: () => _pdfSilOnayDialog(context, toplanti.id, url, provider),
-                                        tooltip: 'Belgeyi Sil',
-                                      ),
-                                    ],
-                                  ),
-                                  const Divider(height: 16),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      OutlinedButton.icon(
-                                        onPressed: () {
-                                          if (kIsWeb) {
-                                            html.window.open(url, '_blank');
-                                          }
-                                        },
-                                        icon: const Icon(Icons.search_rounded, size: 16),
-                                        label: const Text('Önizle'),
-                                        style: OutlinedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                          minimumSize: Size.zero,
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 18),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onPressed: () => _pdfSilOnayDialog(context, toplanti.id, url, provider),
+                                          tooltip: 'Belgeyi Sil',
                                         ),
-                                      ),
-                                      Tooltip(
-                                        message: 'Kararları Kontrol Et & YK Kararı Yaz',
-                                        child: FilledButton.icon(
-                                          onPressed: () => _pdfKararlariCikar(toplanti, provider, ykProvider, url),
-                                          icon: const Icon(Icons.auto_awesome_rounded, size: 16),
-                                          label: const Text('Kararları Yaz', style: TextStyle(fontSize: 11)),
-                                          style: FilledButton.styleFrom(
-                                            backgroundColor: theme.colorScheme.primary,
-                                            foregroundColor: theme.colorScheme.onPrimary,
+                                      ],
+                                    ),
+                                    const Divider(height: 16),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        OutlinedButton.icon(
+                                          onPressed: () {
+                                            if (kIsWeb) {
+                                              html.window.open(url, '_blank');
+                                            }
+                                          },
+                                          icon: const Icon(Icons.search_rounded, size: 16),
+                                          label: const Text('Önizle'),
+                                          style: OutlinedButton.styleFrom(
                                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                             minimumSize: Size.zero,
                                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                        Tooltip(
+                                          message: 'Kararları Kontrol Et & YK Kararı Yaz',
+                                          child: FilledButton.icon(
+                                            onPressed: () => _pdfKararlariCikar(toplanti, provider, ykProvider, url),
+                                            icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+                                            label: const Text('Kararları Yaz', style: TextStyle(fontSize: 11)),
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor: theme.colorScheme.primary,
+                                              foregroundColor: theme.colorScheme.onPrimary,
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        }),
-                    ],
+                            );
+                          }),
+                      ],
+                    ),
                   ),
-                ),
+          ],
         ],
       ),
     );
@@ -475,14 +665,30 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
                               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
                             items: kararlar.map((k) {
-                              final label = k.kararNo.isNotEmpty
-                                  ? 'Karar No: ${k.kararNo} - ${k.baslik}'
+                              final isTaslak = k.durum == YkKararDurum.taslak;
+                              final labelText = k.kararNo.isNotEmpty
+                                  ? 'Karar ${k.kararNo} - ${k.baslik}'
                                   : 'Taslak - ${k.baslik}';
                               return DropdownMenuItem(
                                 value: k.id,
-                                child: Text(
-                                  label.length > 40 ? '${label.substring(0, 37)}...' : label,
-                                  overflow: TextOverflow.ellipsis,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isTaslak ? Icons.edit_note_rounded : Icons.check_circle_outline_rounded,
+                                      color: isTaslak ? Colors.amber.shade700 : Colors.green,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      labelText.length > 35 ? '${labelText.substring(0, 32)}...' : labelText,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: isTaslak ? Colors.amber.shade900 : Colors.black87,
+                                        fontWeight: isTaslak ? FontWeight.w500 : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             }).toList(),
@@ -675,7 +881,7 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
   }
 
   /// Sağ panel: A4 formatında jilet gibi canlı karar önizlemesi
-  Widget _buildSagPanel(ToplantiModel toplanti, ThemeData theme) {
+  Widget _buildSagPanel(ToplantiModel toplanti, List<YkKararModel> kararlar, ThemeData theme) {
     if (_seciliKararId == null) {
       return Center(
         child: Text(
@@ -687,19 +893,72 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
 
     return Container(
       color: Colors.grey.shade100,
-      padding: const EdgeInsets.all(24),
-      child: Center(
-        child: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: _buildCanliOnizlemePaper(toplanti, theme),
+      child: Column(
+        children: [
+          // Segmented Toggle at the top of the Sag Panel
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'A4 Canlı Önizleme',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                ToggleButtons(
+                  isSelected: [!_previewTumKararlar, _previewTumKararlar],
+                  onPressed: (index) {
+                    setState(() {
+                      _previewTumKararlar = index == 1;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  constraints: const BoxConstraints(minHeight: 32, minWidth: 120),
+                  children: const [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.article_rounded, size: 16),
+                        SizedBox(width: 4),
+                        Text('Seçili Karar', style: TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.menu_book_rounded, size: 16),
+                        SizedBox(width: 4),
+                        Text('Tüm Kararlar', style: TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Center(
+                child: SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: _buildCanliOnizlemePaper(toplanti, kararlar, theme),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCanliOnizlemePaper(ToplantiModel toplanti, ThemeData theme) {
+  Widget _buildCanliOnizlemePaper(ToplantiModel toplanti, List<YkKararModel> kararlar, ThemeData theme) {
     final kurulUyeleri = _ayarlar?.kurulUyeleri ?? [];
     final baskanUye = kurulUyeleri.firstWhere(
       (u) => u.gorev.toLowerCase().contains('başkan') || u.gorev.toLowerCase().contains('baskan'),
@@ -787,14 +1046,42 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
             ),
             const SizedBox(height: 20),
 
-            // Karar No & Metni
-            Text(
-              'KARAR ${_noController.text.isEmpty ? 'Taslak' : _noController.text}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            _renderKararMetni(_metinController.text),
-            const SizedBox(height: 24),
+            // Karar No & Metni (Tek veya Tüm Kararlar)
+            if (_previewTumKararlar && kararlar.isNotEmpty)
+              ...kararlar.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final k = entry.value;
+                final isSelected = k.id == _seciliKararId;
+                final kararNo = isSelected ? _noController.text : k.kararNo;
+                final kararMetni = isSelected ? _metinController.text : k.kararMetni;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'KARAR ${kararNo.isEmpty ? 'Taslak' : kararNo}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 6),
+                    _renderKararMetni(kararMetni),
+                    const SizedBox(height: 16),
+                    if (idx < kararlar.length - 1)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Divider(color: Colors.grey, height: 1),
+                      ),
+                  ],
+                );
+              })
+            else ...[
+              Text(
+                'KARAR ${_noController.text.isEmpty ? 'Taslak' : _noController.text}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              _renderKararMetni(_metinController.text),
+              const SizedBox(height: 24),
+            ],
 
             const Center(
               child: Text(
