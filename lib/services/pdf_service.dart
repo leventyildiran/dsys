@@ -24,81 +24,236 @@ class PdfService {
   /// milimetrik koordinatlarla (Positioned widget'ları ile) yerleştirir.
   static Future<Uint8List> matbuFaturaUret(FaturaModel fatura) async {
     final pdf = pw.Document();
+    final satirlar = fatura.kalemler.isNotEmpty
+        ? fatura.kalemler
+        : [
+            FaturaKalem(
+              aciklama: fatura.hizmetDetay,
+              adet: 1,
+              birimFiyat: fatura.tutar,
+              tutar: fatura.tutar,
+            ),
+          ];
+    const satirLimit = 10;
+    const satirY = 280.0;
+    const satirAralik = 18.0;
 
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: pw.EdgeInsets.zero, // Sıfır kenar marjı
-        build: (pw.Context context) {
-          return pw.Stack(
-            children: [
-              // 1. Fatura Tarihi (Üst Sağ - x: 480pt, y: 80pt)
-              if (fatura.faturaTarihi != null)
+    final toplamSayfa = (satirlar.length / satirLimit).ceil().clamp(1, 9999);
+    var oncekiSayfaToplam = 0.0;
+
+    for (var sayfaIndex = 0; sayfaIndex < toplamSayfa; sayfaIndex++) {
+      final baslangic = sayfaIndex * satirLimit;
+      final bitis = (baslangic + satirLimit > satirlar.length)
+          ? satirlar.length
+          : baslangic + satirLimit;
+      final sayfaSatirlari = satirlar.sublist(baslangic, bitis);
+      final sayfaToplami = sayfaSatirlari.fold<double>(
+        0,
+        (acc, kalem) => acc + kalem.tutar,
+      );
+      final devreden = oncekiSayfaToplam;
+      final araToplam = devreden + sayfaToplami;
+      final sonSayfa = sayfaIndex == toplamSayfa - 1;
+
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: pw.EdgeInsets.zero,
+          build: (pw.Context context) {
+            return pw.Stack(
+              children: [
+                if (fatura.faturaTarihi != null)
+                  pw.Positioned(
+                    left: 480,
+                    top: 80,
+                    child: pw.Text(fatura.faturaTarihi!),
+                  ),
+
+                if (fatura.seriNo != null || fatura.siraNo != null)
+                  pw.Positioned(
+                    left: 480,
+                    top: 100,
+                    child: pw.Text('${fatura.seriNo ?? ''} ${fatura.siraNo ?? ''}'),
+                  ),
+
                 pw.Positioned(
-                  left: 480,
-                  top: 80,
-                  child: pw.Text(fatura.faturaTarihi!),
-                ),
-
-              // 2. Seri ve Sıra No (Üst Sağ - x: 480pt, y: 100pt)
-              if (fatura.seriNo != null || fatura.siraNo != null)
-                pw.Positioned(
-                  left: 480,
-                  top: 100,
-                  child: pw.Text('${fatura.seriNo ?? ''} ${fatura.siraNo ?? ''}'),
-                ),
-
-              // 3. Firma Ünvanı / Alıcı Bilgisi (Orta Sol - x: 80pt, y: 150pt)
-              pw.Positioned(
-                left: 80,
-                top: 150,
-                child: pw.SizedBox(
-                  width: 300,
-                  child: pw.Text(
-                    fatura.firmaUnvan,
-                    style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+                  left: 80,
+                  top: 150,
+                  child: pw.SizedBox(
+                    width: 300,
+                    child: pw.Text(
+                      fatura.firmaUnvan,
+                      style: pw.TextStyle(
+                        fontSize: 11,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
-              ),
 
-              // 4. Hizmet Detayı / Açıklama (Orta - x: 80pt, y: 280pt)
-              pw.Positioned(
-                left: 80,
-                top: 280,
-                child: pw.SizedBox(
-                  width: 320,
-                  child: pw.Text(fatura.hizmetDetay, style: const pw.TextStyle(fontSize: 10)),
-                ),
-              ),
+                if (devreden > 0)
+                  pw.Positioned(
+                    left: 270,
+                    top: satirY - 16,
+                    child: pw.SizedBox(
+                      width: 210,
+                      child: pw.Text(
+                        'Nakli Yekun (Önceki Sayfa)',
+                        style: pw.TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (devreden > 0)
+                  pw.Positioned(
+                    left: 510,
+                    top: satirY - 16,
+                    child: pw.SizedBox(
+                      width: 62,
+                      child: pw.Text(
+                        TurkceFormat.para(devreden),
+                        style: pw.TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                        textAlign: pw.TextAlign.right,
+                      ),
+                    ),
+                  ),
 
-              // 5. Hizmet Bedeli / Tutar (Orta Sağ - x: 480pt, y: 280pt)
-              pw.Positioned(
-                left: 480,
-                top: 280,
-                child: pw.Text(TurkceFormat.para(fatura.tutar)),
-              ),
+                ...sayfaSatirlari.asMap().entries.expand((entry) {
+                  final idx = entry.key;
+                  final kalem = entry.value;
+                  final top = satirY + (idx * satirAralik);
+                  return [
+                    pw.Positioned(
+                      left: 270,
+                      top: top,
+                      child: pw.SizedBox(
+                        width: 210,
+                        child: pw.Text(
+                          kalem.aciklama,
+                          style: const pw.TextStyle(fontSize: 8.5),
+                          maxLines: 1,
+                        ),
+                      ),
+                    ),
+                    pw.Positioned(
+                      left: 484,
+                      top: top,
+                      child: pw.SizedBox(
+                        width: 24,
+                        child: pw.Text(
+                          '${kalem.adet}',
+                          style: const pw.TextStyle(fontSize: 8.5),
+                        ),
+                      ),
+                    ),
+                    pw.Positioned(
+                      left: 510,
+                      top: top,
+                      child: pw.SizedBox(
+                        width: 62,
+                        child: pw.Text(
+                          TurkceFormat.para(kalem.birimFiyat),
+                          style: const pw.TextStyle(fontSize: 8.5),
+                          textAlign: pw.TextAlign.right,
+                        ),
+                      ),
+                    ),
+                  ];
+                }),
 
-              // 6. KDV Tutarı (Alt Sağ - x: 480pt, y: 650pt)
-              pw.Positioned(
-                left: 480,
-                top: 650,
-                child: pw.Text(TurkceFormat.para(fatura.kdvTutar)),
-              ),
+                if (!sonSayfa)
+                  pw.Positioned(
+                    left: 270,
+                    top: satirY + (satirLimit * satirAralik) + 4,
+                    child: pw.SizedBox(
+                      width: 210,
+                      child: pw.Text(
+                        'Nakli Yekun (Devreden)',
+                        style: pw.TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (!sonSayfa)
+                  pw.Positioned(
+                    left: 510,
+                    top: satirY + (satirLimit * satirAralik) + 4,
+                    child: pw.SizedBox(
+                      width: 62,
+                      child: pw.Text(
+                        TurkceFormat.para(araToplam),
+                        style: pw.TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                        textAlign: pw.TextAlign.right,
+                      ),
+                    ),
+                  ),
 
-              // 7. Toplam Tutar (Alt Sağ - x: 480pt, y: 680pt)
-              pw.Positioned(
-                left: 480,
-                top: 680,
-                child: pw.Text(
-                  TurkceFormat.para(fatura.toplamTutar),
-                  style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+                if (fatura.melbesBasvuruNo != null)
+                  pw.Positioned(
+                    left: 175,
+                    top: 338,
+                    child: pw.Text(
+                      fatura.melbesBasvuruNo!,
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                  ),
+                if (fatura.numuneNo != null)
+                  pw.Positioned(
+                    left: 175,
+                    top: 367,
+                    child: pw.Text(
+                      fatura.numuneNo!,
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                  ),
+
+                if (sonSayfa)
+                  pw.Positioned(
+                    left: 480,
+                    top: 650,
+                    child: pw.Text(TurkceFormat.para(fatura.kdvTutar)),
+                  ),
+
+                if (sonSayfa)
+                  pw.Positioned(
+                    left: 480,
+                    top: 680,
+                    child: pw.Text(
+                      TurkceFormat.para(fatura.toplamTutar),
+                      style: pw.TextStyle(
+                        fontSize: 11,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                if (toplamSayfa > 1)
+                  pw.Positioned(
+                    right: 24,
+                    top: 24,
+                    child: pw.Text(
+                      'Sayfa ${sayfaIndex + 1}/$toplamSayfa',
+                      style: const pw.TextStyle(fontSize: 8),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      );
+
+      oncekiSayfaToplam = araToplam;
+    }
 
     return pdf.save();
   }
@@ -166,8 +321,10 @@ class PdfService {
               pw.Table(
                 border: pw.TableBorder.all(),
                 columnWidths: {
-                  0: const pw.FlexColumnWidth(3),
-                  1: const pw.FlexColumnWidth(2),
+                  0: const pw.FlexColumnWidth(4),
+                  1: const pw.FlexColumnWidth(1),
+                  2: const pw.FlexColumnWidth(2),
+                  3: const pw.FlexColumnWidth(2),
                 },
                 children: [
                   pw.TableRow(
@@ -176,18 +333,38 @@ class PdfService {
                     ),
                     children: [
                       _buildTableCell('Açıklama', bold: true),
+                      _buildTableCell('Adet', bold: true, align: pw.TextAlign.right),
+                      _buildTableCell('Birim Fiyat', bold: true, align: pw.TextAlign.right),
                       _buildTableCell('Tutar', bold: true, align: pw.TextAlign.right),
                     ],
                   ),
-                  pw.TableRow(children: [
-                    _buildTableCell('Hizmet Bedeli'),
-                    _buildTableCell(
-                      TurkceFormat.para(fatura.tutar),
-                      align: pw.TextAlign.right,
-                    ),
-                  ]),
+                  ...((fatura.kalemler.isNotEmpty)
+                      ? fatura.kalemler
+                      : [
+                          FaturaKalem(
+                            aciklama: fatura.hizmetDetay,
+                            adet: 1,
+                            birimFiyat: fatura.tutar,
+                            tutar: fatura.tutar,
+                          )
+                        ]).map(
+                    (kalem) => pw.TableRow(children: [
+                      _buildTableCell(kalem.aciklama),
+                      _buildTableCell('${kalem.adet}', align: pw.TextAlign.right),
+                      _buildTableCell(
+                        TurkceFormat.para(kalem.birimFiyat),
+                        align: pw.TextAlign.right,
+                      ),
+                      _buildTableCell(
+                        TurkceFormat.para(kalem.tutar),
+                        align: pw.TextAlign.right,
+                      ),
+                    ]),
+                  ),
                   pw.TableRow(children: [
                     _buildTableCell('KDV (%${fatura.kdvOrani.toInt()})'),
+                    _buildTableCell(''),
+                    _buildTableCell(''),
                     _buildTableCell(
                       TurkceFormat.para(fatura.kdvTutar),
                       align: pw.TextAlign.right,
@@ -199,6 +376,8 @@ class PdfService {
                     ),
                     children: [
                       _buildTableCell('TOPLAM', bold: true),
+                      _buildTableCell(''),
+                      _buildTableCell(''),
                       _buildTableCell(
                         TurkceFormat.para(fatura.toplamTutar),
                         bold: true,

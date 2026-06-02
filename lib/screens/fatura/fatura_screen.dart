@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
@@ -26,6 +27,7 @@ class _FaturaScreenState extends State<FaturaScreen>
   final _metinController = TextEditingController();
   String? _secilenBirimId;
   String? _secilenBirimAd;
+  String? _secilenPdfAdi;
 
   @override
   void initState() {
@@ -113,6 +115,38 @@ class _FaturaScreenState extends State<FaturaScreen>
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Future<void> _pdfSecVeAyristir(FaturaProvider provider) async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) return;
+    final secilen = result.files.first;
+    final bytes = secilen.bytes;
+    if (bytes == null) return;
+
+    if (mounted) {
+      setState(() {
+        _secilenPdfAdi = secilen.name;
+      });
+    }
+
+    await provider.pdfdenAyristir(bytes);
+
+    if (!mounted) return;
+    final message = provider.hataMesaji ??
+        '${provider.parseSonuclari.length} kayıt PDF üzerinden ayrıştırıldı.';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor:
+            provider.hataMesaji == null ? null : Theme.of(context).colorScheme.error,
       ),
     );
   }
@@ -224,6 +258,29 @@ class _FaturaScreenState extends State<FaturaScreen>
             'Sistem metni otomatik olarak ayrıştıracaktır.',
             style: theme.textTheme.bodySmall,
           ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pdfSecVeAyristir(provider),
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: const Text('PDF Yükle ve Ayrıştır'),
+                ),
+              ),
+            ],
+          ),
+          if (_secilenPdfAdi != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Seçili PDF: $_secilenPdfAdi',
+              style: theme.textTheme.bodySmall,
+            ),
+            Text(
+              'Üst yazı kısmı otomatik atlanır, fatura alanları çıkarılır.',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
           const SizedBox(height: 12),
           // Birim seçimi
           FutureBuilder<List<BirimModel>>(
@@ -288,8 +345,8 @@ class _FaturaScreenState extends State<FaturaScreen>
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () {
-                    provider.metinAyristir(_metinController.text);
+                  onPressed: () async {
+                    await provider.metinAyristir(_metinController.text);
                   },
                   icon: const Icon(Icons.auto_fix_high),
                   label: const Text('Ayrıştır'),
@@ -327,7 +384,13 @@ class _FaturaScreenState extends State<FaturaScreen>
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     title: Text(sonuc.firmaUnvan),
-                    subtitle: Text(sonuc.hizmetDetay),
+                    subtitle: Text(
+                      '${sonuc.hizmetDetay}\n'
+                      'Kalem Sayısı: ${sonuc.kalemler.length}\n'
+                      'Numune No: ${sonuc.numuneNo ?? '-'} | '
+                      'MELBES Başvuru No: ${sonuc.melbesBasvuruNo ?? '-'}',
+                    ),
+                    isThreeLine: true,
                     trailing: Text(
                       TurkceFormat.para(sonuc.tutar),
                       style: const TextStyle(fontWeight: FontWeight.bold),
@@ -370,6 +433,16 @@ class _FaturaScreenState extends State<FaturaScreen>
                         style: theme.textTheme.bodySmall,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'Numune No: ${fatura.numuneNo ?? '-'} | MELBES: ${fatura.melbesBasvuruNo ?? '-'}',
+                        style: theme.textTheme.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'Kalem: ${fatura.kalemler.length}',
+                        style: theme.textTheme.bodySmall,
                       ),
                     ],
                   ),

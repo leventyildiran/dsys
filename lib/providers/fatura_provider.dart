@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/fatura_model.dart';
@@ -89,8 +90,27 @@ class FaturaProvider extends ChangeNotifier {
   }
 
   /// Metin ayrıştırır (toplu fatura talebi).
-  void metinAyristir(String metin) {
-    _parseSonuclari = _service.metinAyristir(metin);
+  Future<void> metinAyristir(String metin) async {
+    _hataMesaji = null;
+    _parseSonuclari = await _service.metinAyristirGelismis(metin);
+
+    if (_parseSonuclari.isEmpty) {
+      _hataMesaji = 'Ayrıştırılabilir fatura verisi bulunamadı.';
+    }
+
+    notifyListeners();
+  }
+
+  /// PDF dosyasını ayrıştırır (üst yazı atlama + extractor/fallback).
+  Future<void> pdfdenAyristir(Uint8List pdfBytes) async {
+    _hataMesaji = null;
+    _parseSonuclari = await _service.pdfAyristir(pdfBytes);
+
+    if (_parseSonuclari.isEmpty) {
+      _hataMesaji =
+          'PDF ayrıştırılamadı. Numune No ve MELBES Başvuru No içeren kayıt bulunamadı.';
+    }
+
     notifyListeners();
   }
 
@@ -106,6 +126,20 @@ class FaturaProvider extends ChangeNotifier {
     }
 
     try {
+      final zorunluAlanEksik = _parseSonuclari
+          .where((s) =>
+              (s.numuneNo == null || s.numuneNo!.trim().isEmpty) ||
+              (s.melbesBasvuruNo == null ||
+                  s.melbesBasvuruNo!.trim().isEmpty))
+          .toList();
+
+      if (zorunluAlanEksik.isNotEmpty) {
+        _hataMesaji =
+            'Numune No ve MELBES Başvuru No zorunlu. ${zorunluAlanEksik.length} kayıt eksik.';
+        notifyListeners();
+        return false;
+      }
+
       final faturalar = _parseSonuclari.map((sonuc) {
         final kdvTutar = sonuc.tutar * 0.20;
         return FaturaModel(
@@ -118,6 +152,9 @@ class FaturaProvider extends ChangeNotifier {
           kdvOrani: 20,
           kdvTutar: kdvTutar,
           toplamTutar: sonuc.tutar + kdvTutar,
+          kalemler: sonuc.kalemler,
+          numuneNo: sonuc.numuneNo,
+          melbesBasvuruNo: sonuc.melbesBasvuruNo,
         );
       }).toList();
 
