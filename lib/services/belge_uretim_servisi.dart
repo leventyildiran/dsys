@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:flutter/services.dart';
 
 import '../core/hesaplama_motoru.dart';
 import '../core/karar_metni_servisi.dart';
@@ -83,63 +84,54 @@ class BelgeUretimServisi {
     );
   }
 
-  /// DOCX formatında belge üretir (Office Open XML).
+  /// DOCX formatında belge üretir (Office Open XML) resmi şablonu kullanarak.
   ///
   /// Gerçek .docx ZIP arşivi üretir — Word ile açılabilir.
-  static Uint8List docxOlustur(KararBelgesi belge) {
+  static Future<Uint8List> docxOlustur(KararBelgesi belge) async {
     final content = belge.tamMetin;
-    final docXml = _buildDocumentXml(content);
-    return _buildDocxArchive(docXml);
+    return await _buildDocxFromTemplate(content, isKarar: true);
   }
 
-  /// Düz metinden Word (DOCX) dosyası üretir.
-  static Uint8List metindenDocxOlustur(String content) {
-    final docXml = _buildDocumentXml(content);
-    return _buildDocxArchive(docXml);
+  /// Düz metinden Word (DOCX) dosyası üretir resmi şablonu kullanarak.
+  static Future<Uint8List> metindenDocxOlustur(String content) async {
+    // Gündem dosyası mı yoksa Karar defteri mi olduğunu içerikten kontrol et
+    final isKarar = !content.contains('GÜNDEM MADDELERİ') && 
+                    !content.contains('Gündem ') && 
+                    !content.contains('TOPLANTI GÜNDEM');
+    return await _buildDocxFromTemplate(content, isKarar: isKarar);
   }
 
-  /// Basit bir document.xml üretir (Word paragrafları ve tabloları).
-  static String _buildDocumentXml(String content) {
-    final lines = content.split('\n');
-    final bodyContent = StringBuffer();
-    
-    List<List<String>>? currentTable;
-    
-    for (final line in lines) {
-      final trimmed = line.trim();
-      if (trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 2) {
-        // Table line
-        if (trimmed.contains(RegExp(r'^\|[\s:-|]+$'))) {
-          continue;
-        }
-        final cells = trimmed.split('|')
-            .map((c) => c.trim())
-            .toList();
-        if (cells.first.isEmpty) cells.removeAt(0);
-        if (cells.isNotEmpty && cells.last.isEmpty) cells.removeLast();
-        
-        currentTable ??= [];
-        currentTable.add(cells);
-      } else {
-        // Not a table line. Render previous table if any
-        if (currentTable != null) {
-          bodyContent.writeln(_buildDocxTableXml(currentTable));
-          currentTable = null;
-        }
-        
-        if (trimmed.isNotEmpty) {
-          final escaped = _xmlEscape(line);
-          bodyContent.writeln('<w:p><w:r><w:t xml:space="preserve">$escaped</w:t></w:r></w:p>');
-        }
-      }
-    }
-    
-    if (currentTable != null) {
-      bodyContent.writeln(_buildDocxTableXml(currentTable));
-    }
+  /// Assets'ten şablonu yükler, word/document.xml dosyasını değiştirir ve ZIP olarak geri döndürür.
+  static Future<Uint8List> _buildDocxFromTemplate(String content, {required bool isKarar}) async {
+    final templatePath = isKarar
+        ? 'assets/templates/karar_sablonu.docx'
+        : 'assets/templates/gundem_sablonu.docx';
 
-    return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
+    // Şablon byte'larını assets'ten yükle
+    final ByteData assetData = await rootBundle.load(templatePath);
+    final List<int> templateBytes = assetData.buffer.asUint8List(
+      assetData.offsetInBytes,
+      assetData.lengthInBytes,
+    );
+
+    // ZIP arşivini aç
+    final archive = ZipDecoder().decodeBytes(templateBytes);
+
+    // word/document.xml dosyasını bul
+    final docFileIndex = archive.files.indexWhere((f) => f.name == 'word/document.xml');
+    if (docFileIndex == -1) {
+      throw Exception('word/document.xml şablon içinde bulunamadı.');
+    }
+    final docFile = archive.files[docFileIndex];
+    final originalXml = utf8.decode(docFile.content as List<int>, allowMalformed: true);
+
+    // Şablondaki sayfa yapısını (sectPr: margins, headers, footers) korumak için sectPr tag'ini bul
+    final sectPrMatch = RegExp(r'<w:sectPr\b[^>]*>.*?</w:sectPr>', dotAll: true).firstMatch(originalXml);
+    final sectPrXml = sectPrMatch?.group(0) ?? '';
+
+    // Şablondaki w:document açılış tag'ini (tüm xmlns tanımlarıyla birlikte) koru
+    final documentOpenMatch = RegExp(r'<w:document\b[^>]*>', dotAll: true).firstMatch(originalXml);
+    final documentOpenXml = documentOpenMatch?.group(0) ?? '''<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
             xmlns:o="urn:schemas-microsoft-com:office:office"
             xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -153,11 +145,145 @@ class BelgeUretimServisi {
             xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk"
             xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml"
             xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
-            mc:Ignorable="w14 wp14">
+            mc:Ignorable="w14">''';
+
+    // Yeni body içeriğini üret
+    final generatedBody = _buildDocumentBodyXml(content, sectPrXml);
+
+    final finalDocXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+$documentOpenXml
   <w:body>
-${bodyContent.toString()}
+$generatedBody
   </w:body>
 </w:document>''';
+
+    final docFileData = utf8.encode(finalDocXml);
+
+    // Yeni ZIP arşivi oluşturup dosyaları aktar (word/document.xml'i güncelleyerek)
+    final newArchive = Archive();
+    for (final f in archive.files) {
+      if (f.name == 'word/document.xml') {
+        newArchive.addFile(ArchiveFile('word/document.xml', docFileData.length, docFileData));
+      } else {
+        newArchive.addFile(f);
+      }
+    }
+
+    final zipData = ZipEncoder().encode(newArchive);
+    return Uint8List.fromList(zipData!);
+  }
+
+  /// Gelen metin satırlarını ve tablolarını w:body formatına dönüştürür.
+  static String _buildDocumentBodyXml(String content, String sectPrXml) {
+    final lines = content.split('\n');
+    final bodyContent = StringBuffer();
+    
+    List<List<String>>? currentTable;
+    
+    for (final line in lines) {
+      final trimmed = line.trim();
+      
+      if (trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 2) {
+        // Tablo satırı
+        if (trimmed.contains(RegExp(r'^\|[\s:-|]+$'))) {
+          continue; // Tablo ayracı (|---|) ise atla
+        }
+        final cells = trimmed.split('|')
+            .map((c) => c.trim())
+            .toList();
+        if (cells.first.isEmpty) cells.removeAt(0);
+        if (cells.isNotEmpty && cells.last.isEmpty) cells.removeLast();
+        
+        currentTable ??= [];
+        currentTable.add(cells);
+      } else {
+        // Tablo dışı satır. Varsa önceki tabloyu yazdır.
+        if (currentTable != null) {
+          bodyContent.writeln(_buildDocxTableXml(currentTable));
+          currentTable = null;
+        }
+        
+        if (trimmed.isNotEmpty) {
+          final escaped = _xmlEscape(trimmed);
+          final isHeading = _isHeadingLine(trimmed);
+          
+          if (isHeading) {
+            // Başlık paragrafları kalın, ortalanmış ve paragraf arası açık olur
+            bodyContent.writeln('''
+    <w:p>
+      <w:pPr>
+        <w:spacing w:before="240" w:after="120" w:line="360" w:lineRule="auto"/>
+        <w:jc w:val="center"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>
+          <w:b/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+        </w:rPr>
+        <w:t xml:space="preserve">$escaped</w:t>
+      </w:r>
+    </w:p>''');
+          } else {
+            // Normal paragraflar iki yana yaslı, Times New Roman 12pt ve ilk satır girintili olur
+            final deservesIndent = !_isNonIndentedLine(trimmed);
+            final indentXml = deservesIndent 
+                ? '<w:ind w:leftChars="0" w:left="0" w:firstLineChars="0" w:firstLine="720"/>' 
+                : '';
+                
+            bodyContent.writeln('''
+    <w:p>
+      <w:pPr>
+        <w:spacing w:line="360" w:lineRule="auto"/>
+        $indentXml
+        <w:jc w:val="both"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+        </w:rPr>
+        <w:t xml:space="preserve">$escaped</w:t>
+      </w:r>
+    </w:p>''');
+          }
+        }
+      }
+    }
+    
+    if (currentTable != null) {
+      bodyContent.writeln(_buildDocxTableXml(currentTable));
+    }
+    
+    // Sayfa yapısını (margins, header/footer referansları vb.) en sona ekle
+    if (sectPrXml.isNotEmpty) {
+      bodyContent.writeln(sectPrXml);
+    }
+    
+    return bodyContent.toString();
+  }
+
+  static bool _isHeadingLine(String line) {
+    final upper = line.toUpperCase();
+    if (upper.startsWith('KARAR ') || upper.startsWith('GÜNDEM ')) return true;
+    if (upper == 'GELİR GETİRİCİ FAALİYET CETVELİ' || 
+        upper == 'DAĞITIM ÖZETİ' || 
+        upper == 'İMZA TABLOSU' ||
+        upper == 'GELİR GETİRİCİ FAALİYET CETVELİ BAŞLIĞI') return true;
+    return false;
+  }
+
+  static bool _isNonIndentedLine(String line) {
+    final upper = line.toUpperCase();
+    if (upper == 'T.C.' || 
+        upper.startsWith('UŞAK ÜNİVERSİTESİ') || 
+        upper.startsWith('DÖNER SERMAYE') ||
+        upper.contains('TOPLANTI SAYISI:') ||
+        upper.contains('KARAR TARİHİ:') ||
+        upper.contains('─')) return true;
+    return false;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -364,70 +490,32 @@ ${bodyContent.toString()}
 
 
 
-  /// Gerçek .docx ZIP arşivini oluşturur.
-  ///
-  /// DOCX dosyası aslında bir ZIP arşividir ve en az şu dosyaları içerir:
-  /// - [Content_Types].xml
-  /// - _rels/.rels
-  /// - word/document.xml
-  /// - word/_rels/document.xml.rels
-  static Uint8List _buildDocxArchive(String documentXml) {
-    final archive = Archive();
 
-    // [Content_Types].xml
-    const contentTypes = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>''';
-
-    // _rels/.rels
-    const rels = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>''';
-
-    // word/_rels/document.xml.rels
-    const docRels = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-</Relationships>''';
-
-    // Dosyaları arşive ekle
-    _addFileToArchive(archive, '[Content_Types].xml', contentTypes);
-    _addFileToArchive(archive, '_rels/.rels', rels);
-    _addFileToArchive(archive, 'word/document.xml', documentXml);
-    _addFileToArchive(archive, 'word/_rels/document.xml.rels', docRels);
-
-    // ZIP olarak encode et
-    final zipData = ZipEncoder().encode(archive);
-    return Uint8List.fromList(zipData!);
-  }
-
-  /// Arşive bir dosya ekler.
-  static void _addFileToArchive(Archive archive, String name, String content) {
-    final data = utf8.encode(content);
-    archive.addFile(ArchiveFile(name, data.length, data));
-  }
 
   /// Markdown tablosundan yerel (native) Word XML tablosu üretir.
   static String _buildDocxTableXml(List<List<String>> tableData) {
     final buffer = StringBuffer();
     buffer.writeln('<w:tbl>');
     
-    // Tablo özellikleri (Kenarlıklar ve ortalama hizalama)
+    // Tablo özellikleri (Kenarlıklar, ortalama hizalama ve hücre dolguları)
     buffer.writeln('''
       <w:tblPr>
         <w:tblStyle w:val="TableGrid"/>
         <w:tblW w:w="5000" w:type="pct"/>
         <w:tblBorders>
-          <w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/>
-          <w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/>
-          <w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/>
-          <w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/>
-          <w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/>
-          <w:insideV w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+          <w:top w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+          <w:left w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+          <w:bottom w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+          <w:right w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+          <w:insideH w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+          <w:insideV w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
         </w:tblBorders>
+        <w:tblCellMar>
+          <w:top w:w="120" w:type="dxa"/>
+          <w:left w:w="150" w:type="dxa"/>
+          <w:bottom w:w="120" w:type="dxa"/>
+          <w:right w:w="150" w:type="dxa"/>
+        </w:tblCellMar>
         <w:jc w:val="center"/>
       </w:tblPr>
     ''');
@@ -452,17 +540,18 @@ ${bodyContent.toString()}
         final escaped = _xmlEscape(cell);
         buffer.writeln('<w:tc>');
         
-        // Hücre özellikleri (Başlık için gri arka plan dolgusu)
+        // Hücre özellikleri (Başlık için hafif gri arka plan dolgusu)
         buffer.writeln('<w:tcPr>');
         buffer.writeln('<w:tcW w:w="0" w:type="auto"/>');
         if (isHeader) {
-          buffer.writeln('<w:shd w:val="clear" w:color="auto" w:fill="F2F2F2"/>');
+          buffer.writeln('<w:shd w:val="clear" w:color="auto" w:fill="F5F5F5"/>');
         }
         buffer.writeln('</w:tcPr>');
         
         // Paragraf ve hizalama
         buffer.writeln('<w:p>');
         buffer.writeln('<w:pPr>');
+        buffer.writeln('<w:spacing w:before="60" w:after="60" w:line="240" w:lineRule="auto"/>');
         // Sayısal veya başlık hücresi ise ortala, değilse sola hizala
         if (isHeader || RegExp(r'^\d+(\.\d+)?\s*([%₺]|TL)?$').hasMatch(cell.trim())) {
           buffer.writeln('<w:jc w:val="center"/>');
@@ -472,9 +561,14 @@ ${bodyContent.toString()}
         buffer.writeln('</w:pPr>');
         
         buffer.writeln('<w:r>');
+        buffer.writeln('<w:rPr>');
+        buffer.writeln('<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>');
+        buffer.writeln('<w:sz w:val="22"/>'); // Tablolarda 11pt font kullanılır
+        buffer.writeln('<w:szCs w:val="22"/>');
         if (isHeader) {
-          buffer.writeln('<w:rPr><w:b/></w:rPr>'); // Başlık hücresi koyu yazılır
+          buffer.writeln('<w:b/>'); // Başlık hücresi kalın
         }
+        buffer.writeln('</w:rPr>');
         buffer.writeln('<w:t xml:space="preserve">$escaped</w:t>');
         buffer.writeln('</w:r>');
         buffer.writeln('</w:p>');

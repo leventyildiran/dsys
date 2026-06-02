@@ -209,7 +209,7 @@ class TaksitProvider extends ChangeNotifier {
   /// DOCX dosyası olarak indir.
   Future<List<int>?> docxIndir(KararBelgesi belge) async {
     try {
-      return BelgeUretimServisi.docxOlustur(belge);
+      return await BelgeUretimServisi.docxOlustur(belge);
     } catch (e) {
       _hataMesaji = 'DOCX oluşturma sırasında hata: $e';
       notifyListeners();

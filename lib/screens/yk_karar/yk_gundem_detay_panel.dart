@@ -1462,7 +1462,7 @@ class _YkGundemDetayPanelState extends State<YkGundemDetayPanel> {
     }
     buffer.writeln('─' * 80);
 
-    final bytes = BelgeUretimServisi.metindenDocxOlustur(buffer.toString());
+    final bytes = await BelgeUretimServisi.metindenDocxOlustur(buffer.toString());
     final kararAdi = _noController.text.isNotEmpty
         ? 'karar_${_noController.text.replaceAll('/', '_')}'
         : 'karar_taslak';

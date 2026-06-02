@@ -600,7 +600,7 @@ class _YkKararMerkeziScreenState extends State<YkKararMerkeziScreen> {
     );
 
     if (defter != null) {
-      final bytes = BelgeUretimServisi.metindenDocxOlustur(defter);
+      final bytes = await BelgeUretimServisi.metindenDocxOlustur(defter);
       await FileSaver.instance.saveFile(
         name: 'karar_defteri_${_seciliToplanti!.toplantiNo.replaceAll('/', '_')}',
         bytes: bytes,

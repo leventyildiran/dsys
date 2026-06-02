@@ -499,28 +499,38 @@ Genel Bilgiler (Belgeden Çıkarılacak):
 - BIRIM_TOPLANTI_SAYI: Birimin kendi kurul toplantı sayısı (Örn: 04)
 
 Kararlar:
-Metnin içinde geçen her bir karar için ayrı bir Yürütme Kurulu kararı oluştur. Kararın konusuna göre aşağıdaki ŞABLONLARDAN en uygun olanını seçip değişkenleri yerleştir:
+Metnin içinde geçen her bir karar için ayrı bir Yürütme Kurulu kararı oluştur. Kararın konusuna göre aşağıdaki 9 ŞABLONDAN en uygun olanını seçip değişkenleri yerleştir:
 
-ŞABLON 1 (Danışmanlık / Gelir Getirici Faaliyet Dağıtımı):
+ŞABLON 1 (Danışmanlık Faaliyet / Katkı Payı Dağıtım Kararı - Standart / Katsayılı):
 "Üniversitemiz {BIRIM_AD} Müdürlüğü’nün {BIRIM_EVRAK_TARIHI} tarih ve {BIRIM_EVRAK_SAYISI} sayılı yazısı ile {BIRIM_KURUL_TARIHI} tarih, {BIRIM_TOPLANTI_SAYI} toplantı sayılı ve {BIRIM_KARAR_NO} numaralı kararına istinaden; Döner Sermaye Yürütme Kurulu’nun {YK_KARAR_TARIHI} tarih ve {YK_KARAR_NO} sayılı kararı ile {FIRMA_UNVAN}’nin talep ettiği “{ISIN_KONUSU}” kapsamında {DANISMANLIK_SURESI} ay süreyle Danışmanlık Hizmeti için görevlendirilen {HOCA_UNVAN} {HOCA_AD_SOYAD} tarafından verilen danışmanlık hizmetine istinaden elde edilen gelirden ayrılan katkı payından aşağıdaki gelir getirici faaliyet cetveli doğrultusunda, dönem ek ödeme katsayısının {KATSAYI} şeklinde belirlenmesi ve elde edilen puanlara göre hesaplanacak katkı payı dağıtımının gerçekleştirilmesine;"
+(Bu şablondan sonra mutlaka Adı Soyadı, Puanı, Katsayı, Brüt Hakediş içeren faaliyet cetveli tablosunu Markdown olarak ekle).
 
-ŞABLON 2 (58/k Teknik Danışmanlık / Rapor Tahakkuk Ödemesi):
+ŞABLON 2 (Danışmanlık Görevlendirme ve Bütçe Kabul Kararı):
+"Üniversitemiz {BIRIM_AD} Müdürlüğü’nün {BIRIM_EVRAK_TARIHI} tarih ve {BIRIM_EVRAK_SAYISI} sayılı yazısı ile {BIRIM_KURUL_TARIHI} tarih, {BIRIM_TOPLANTI_SAYI} toplantı sayılı ve {BIRIM_KARAR_NO} numaralı kararına istinaden; {FIRMA_UNVAN}’nin talebi üzerine {ISIN_KONUSU} kapsamında {HIZMET_TARIHI} tarihinde (veya {HIZMET_BASLANGIC_TARIHI}-{HIZMET_BITIS_TARIHI} tarihleri arasında), {TUTAR} TL (KDV Hariç) bütçe bedeli ile danışmanlık hizmeti vermek üzere {HOCA_UNVAN} {HOCA_AD_SOYAD}’ın görevlendirilmesinin ve sunulan bütçe planının kabulünün uygunluğuna;"
+
+ŞABLON 3 (2547/58(k) Sanayi İşbirliği Teknik Danışmanlık / Rapor Tahakkuk Ödemesi):
 "Üniversitemiz Yönetim Kurulunun (veya Yürütme Kurulunun) {UYK_KARAR_TARIHI} tarih, {UYK_TOPLANTI_SAYI} toplantı sayılı, {UYK_KARAR_NO} numaralı kararıyla 2547 Sayılı Yükseköğretim Kanununun 58. maddesinin (k) fıkrası kapsamında {FIRMA_UNVAN} ye teknik danışmanlık/rapor hazırlama hizmeti vermek üzere görevlendirilen {HOCA_UNVAN} {HOCA_AD_SOYAD} tarafından {HIZMET_TARIHI} tarihinde (veya {HIZMET_BASLANGIC_TARIHI}-{HIZMET_BITIS_TARIHI} arasında) gerçekleştirilen hizmet için elde edilen {GELIR_TUTARI} TL gelirden ayrılan {KATKI_PAYI_TUTARI} TL katkı payının adı geçen öğretim üyesine tahakkuk ettirilmesine;"
 
-ŞABLON 3 (Bütçe Aktarımı):
+ŞABLON 4 (Bölümiçi / Bölümlerarası Bütçe Aktarım Kararı):
 "Üniversitemiz {BIRIM_AD} Müdürlüğü’nün {BIRIM_EVRAK_TARIHI} tarih ve {BIRIM_EVRAK_SAYISI} sayılı yazısına istinaden; bütçesinden ihtiyaç duyulan giderlerin gerçekleştirilmesi için aşağıda belirtildiği şekilde bölümiçi/bölümlerarası bütçe aktarma işleminin yapılmasının uygunluğuna;"
 (Bu şablon ile birlikte mutlaka Artırılan/Eksiltilen sütunlarını içeren bütçe aktarım tablosunu Markdown formatında oluştur).
 
-ŞABLON 4 (Kurs / Eğitim Ders Saati Katsayı Dağıtımı):
+ŞABLON 5 (Kurs / Eğitim Ders Saati Katsayı Dağıtım Kararı - TÖMER, USEM, TADAUM):
 "Üniversitemiz {BIRIM_AD} Müdürlüğü’ nün {BIRIM_EVRAK_TARIHI} tarih, {BIRIM_EVRAK_SAYISI} sayılı yazısıyla gönderilen, {BIRIM_KURUL_TARIHI} tarih, {BIRIM_TOPLANTI_SAYI} toplantı sayılı ve {BIRIM_KARAR_NO} numaralı Yönetim Kurulu Kararıyla teklif edilen; ilgili Müdürlük tarafından yürütülen “{KURS_ADI}” (Örn: Yabancılara Türkçe Öğretiminde Kültür Aktarımı) dersi/kursu için {DONEM} döneminde elde edilen gelirden ayrılan katkı payından, aşağıdaki gelir getirici faaliyet cetveline göre katkısı bulunan Öğretim Elemanına dağıtılmasına ve ek ödeme katsayısının {KATSAYI} TL (Örn: 20,25 TL veya 14,10 TL) olarak belirlenmesine;"
 (Bu şablondan sonra Adı Soyadı, Puanı, Unvan Katsayısı, Ders Saati, Toplam Puan içeren ders saati hakediş tablosunu Markdown olarak ekle).
 
-ŞABLON 5 (Ağız ve Diş Sağlığı / Diş Hekimliği Ek Ödemeleri - 2547/58):
+ŞABLON 6 (Ağız ve Diş Sağlığı Uygulama Merkezi Ek Ödemeleri - 2547/58):
 "Üniversitemiz Ağız ve Diş Sağlığı Uygulama ve Araştırma Merkez Müdürlüğü’nün {BIRIM_EVRAK_TARIHI} tarih ve {BIRIM_EVRAK_SAYISI} sayılı yazısı ile gönderilen; {UYK_KARAR_TARIHI} tarih, {UYK_TOPLANTI_SAYI} toplantı sayılı ve {UYK_KARAR_NO} numaralı Diş Hekimliği Fakültesi Yönetim Kurulu Kararı ile teklif edilen; döner sermaye gelirleri bakiyesinden {DONEM} dönemi için; Ağız ve Diş Sağlığı Uygulama ve Araştırma Merkezinde görevli akademik ve idari personellere dağıtılacak ek ödeme, yönetici payı ve mesai dışı ücretli tedavi ödemesinin 2547 sayılı Kanunun 58. maddesi ile ilgili yönetmelik hükümleri çerçevesinde aşağıda gösterilen tutarlar doğrultusunda dağıtılmasının uygunluğuna;"
 (Bu şablondan sonra Katkı Payı Ödemesi, Personel Bilgisi, Dağıtılacak Toplam Tutar içeren ek ödeme tablosunu Markdown olarak ekle).
 
-ŞABLON 6 (Fiyat Tarifesi / Kurs Ücreti Belirleme):
+ŞABLON 7 (Fiyat Tarifesi / Kurs Ücreti Belirleme Kararı):
 "Üniversitemiz {BIRIM_AD} Müdürlüğü’ nün {BIRIM_EVRAK_TARIHI} tarih, {BIRIM_EVRAK_SAYISI} sayılı yazısıyla gönderilen, {BIRIM_KURUL_TARIHI} tarih, {BIRIM_TOPLANTI_SAYI} toplantı sayılı ve {BIRIM_KARAR_NO} numaralı Yönetim Kurulu Kararıyla teklif edilen; ilgili Merkez bünyesinde verilmesi planlanan “{KURS_VEYA_ANALIZ_ADI}” (Örn: İHA-1 Ticari İnsansız Hava Aracı Kursu veya Analiz Testleri) ücretinin {TUTAR} TL (KDV Dahil/Hariç belirtilecek şekilde) olarak belirlenmesi ve eğitim/analiz programının ilgili Merkez Müdürlüğü uhdesinde yürütülmesi hususlarının uygunluğuna;"
+
+ŞABLON 8 (Bütçe / Kesin Hesap Cetveli Onay Kararı):
+"Üniversitemiz {BIRIM_AD} Müdürlüğü'nün {BIRIM_EVRAK_TARIHI} tarih ve {BIRIM_EVRAK_SAYISI} sayılı yazısı ekinde sunulan {YIL} mali yılına ait Tahmini Bütçe / Kesin Hesap Cetveli teklifinin incelenmesi sonucunda, ekte yer alan bütçe gelir ve gider tahminlerinin uygunluğuna ve kabul edilerek rektörlük onayına sunulmasına;"
+
+ŞABLON 9 (Mal / Ürün Satış Kararı):
+"Üniversitemiz {BIRIM_AD} Müdürlüğü’nün {BIRIM_EVRAK_TARIHI} tarih ve {BIRIM_EVRAK_SAYISI} sayılı yazısı ile gönderilen; {BIRIM_KURUL_TARIHI} tarih, {BIRIM_TOPLANTI_SAYI} toplantı sayılı ve {BIRIM_KARAR_NO} numaralı Yönetim Kurulu Kararı ile teklif edilen; ilgili birimin araştırma/deneme/üretim faaliyetleri kapsamında elde edilen {URUN_ADI} (Örn: yumurta veya elma) birim satış fiyatının {TUTAR} TL (KDV Dahil/Hariç) olarak belirlenmesine, satışların ilgili birim uhdesinde gerçekleştirilmesine ve elde edilecek döner sermaye gelirlerinin ilgili birim envanterine kaydedilmesine;"
 
 Kurallar:
 - {YK_KARAR_TARIHI} değerini "$toplantiTarihi" yap.
@@ -548,7 +558,7 @@ Kurallar:
     "baslik": "Karar Başlığı (Örn: Karar 2026/18 veya Birim Kararı)",
     "birimAd": "Birim Adı",
     "kararMetni": "Şablona göre doldurulmuş karar metni",
-    "tur": "danismanlik" | "butceAktarim" | "ekOdeme" | "diger"
+    "tur": "danismanlik" | "butce_aktarim" | "ek_odeme" | "dis_hekimligi" | "diger"
   }
 ]
 
@@ -575,10 +585,12 @@ $pdfText
         final strTur = map['tur']?.toString().toLowerCase() ?? 'diger';
         if (strTur == 'danismanlik') {
           tur = YkKararTuru.danismanlik;
-        } else if (strTur == 'butceaktarim') {
+        } else if (strTur == 'butceaktarim' || strTur == 'butce_aktarim') {
           tur = YkKararTuru.butceAktarim;
-        } else if (strTur == 'ekodeme') {
+        } else if (strTur == 'ekodeme' || strTur == 'ek_odeme') {
           tur = YkKararTuru.ekOdeme;
+        } else if (strTur == 'dishekimligi' || strTur == 'dis_hekimligi') {
+          tur = YkKararTuru.disHekimligi;
         }
 
         listKarar.add(YkKararModel(
